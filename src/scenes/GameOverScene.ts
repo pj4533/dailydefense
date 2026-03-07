@@ -20,6 +20,7 @@ export class GameOverScene extends Phaser.Scene {
     this.seed = data.seed ?? 0;
     this.seedLabel = data.seedLabel ?? '';
     this.initials = [];
+    this.slotTexts = [];
     this.confirmed = false;
   }
 
@@ -72,6 +73,13 @@ export class GameOverScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.input.keyboard!.on('keydown', this.handleKey, this);
+
+    // Ensure canvas has keyboard focus
+    this.game.canvas.focus();
+    this.game.canvas.setAttribute('tabindex', '0');
+    this.input.on('pointerdown', () => {
+      this.game.canvas.focus();
+    });
   }
 
   private handleKey(event: KeyboardEvent): void {
