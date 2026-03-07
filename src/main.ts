@@ -8,4 +8,8 @@ new Phaser.Game({
   height: CANVAS_HEIGHT,
   backgroundColor: '#2d1b0e',
   scene: [GameScene],
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
 });
