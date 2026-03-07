@@ -11,6 +11,7 @@ export const CANVAS_HEIGHT = GAME_HEIGHT + UI_HEIGHT;
 
 export const STARTING_MONEY = 100;
 export const STARTING_LIVES = 20;
+export const SELL_REFUND_RATE = 1.0; // 100% refund
 
 export const TOWER_CONFIGS: Record<TowerType, TowerConfig> = {
   [TowerType.BASIC]: {

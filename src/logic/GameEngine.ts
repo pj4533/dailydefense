@@ -1,5 +1,5 @@
 import { TowerType, WaveConfig, GridPosition } from '../types';
-import { TOWER_CONFIGS } from '../config';
+import { TOWER_CONFIGS, SELL_REFUND_RATE } from '../config';
 import { GameState } from './GameState';
 import { GameMap } from './GameMap';
 import { Enemy } from './Enemy';
@@ -97,6 +97,39 @@ export class GameEngine {
     this.state.spend(config.cost);
     this.map.placeTower(col, row);
     this.towers.push(new Tower(col, row, config, this.map.tileSize));
+    return true;
+  }
+
+  getTowerAt(col: number, row: number): Tower | null {
+    return this.towers.find(t => t.col === col && t.row === row) ?? null;
+  }
+
+  getSellValue(tower: Tower): number {
+    return Math.floor(TOWER_CONFIGS[tower.type].cost * SELL_REFUND_RATE);
+  }
+
+  removeTower(col: number, row: number): number {
+    const index = this.towers.findIndex(t => t.col === col && t.row === row);
+    if (index === -1) return 0;
+    const tower = this.towers[index];
+    const refund = this.getSellValue(tower);
+    this.towers.splice(index, 1);
+    this.map.removeTower(col, row);
+    this.state.earn(refund);
+    return refund;
+  }
+
+  moveTower(fromCol: number, fromRow: number, toCol: number, toRow: number): boolean {
+    if (fromCol === toCol && fromRow === toRow) return false;
+    if (!this.map.canPlaceTower(toCol, toRow)) return false;
+    const tower = this.getTowerAt(fromCol, fromRow);
+    if (!tower) return false;
+    this.map.removeTower(fromCol, fromRow);
+    this.map.placeTower(toCol, toRow);
+    tower.col = toCol;
+    tower.row = toRow;
+    tower.x = toCol * this.map.tileSize + this.map.tileSize / 2;
+    tower.y = toRow * this.map.tileSize + this.map.tileSize / 2;
     return true;
   }
 

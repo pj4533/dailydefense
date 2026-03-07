@@ -48,3 +48,7 @@ The codebase is split into a **pure logic layer** (`src/logic/`) and a **Phaser 
 ## Testing
 
 Tests live in `tests/` and mirror `src/logic/` one-to-one. Coverage is measured on `src/**/*.ts` excluding `src/main.ts` and `src/scenes/` (Phaser-dependent, untestable in Node). Target: **80%+ coverage**.
+
+## Reference
+
+- [docs/GENRE_RESEARCH.md](docs/GENRE_RESEARCH.md) — Exhaustive tower defense genre research: history, mechanics, design principles, balancing formulas, notable games, and innovations. Consult when making design decisions.
