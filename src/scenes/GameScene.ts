@@ -12,6 +12,7 @@ import { generateRandomPath } from '../logic/MapGenerator';
 import { generateWave } from '../logic/WaveGenerator';
 import { mulberry32 } from '../logic/seedRng';
 import { getDailySeed, getDailySeedLabel } from '../logic/dailySeed';
+import { Leaderboard, SessionData } from '../logic/Leaderboard';
 
 // Map tower types to spritesheet keys and animation config
 const TOWER_SPRITE: Record<string, { key: string; idle: string }> = {
@@ -58,6 +59,7 @@ export class GameScene extends Phaser.Scene {
   private gameOverTimer: number = 0;
   private seed: number = 0;
   private seedLabel: string = '';
+  private sessionData: SessionData | null = null;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -96,6 +98,7 @@ export class GameScene extends Phaser.Scene {
     this.pointerDown = false;
     this.gameOverTriggered = false;
     this.gameOverTimer = 0;
+    this.sessionData = null;
 
     this.seed = getDailySeed();
     this.seedLabel = getDailySeedLabel();
@@ -106,6 +109,12 @@ export class GameScene extends Phaser.Scene {
       waypoints, generateWave,
       STARTING_MONEY, STARTING_LIVES,
     );
+
+    // Start leaderboard session (fire-and-forget, non-blocking)
+    const leaderboard = new Leaderboard();
+    leaderboard.startSession(this.seed).then(data => {
+      this.sessionData = data;
+    });
 
     this.createAnimations();
     this.createGrid();
@@ -372,6 +381,8 @@ export class GameScene extends Phaser.Scene {
           score: this.engine.state.score,
           seed: this.seed,
           seedLabel: this.seedLabel,
+          sessionId: this.sessionData?.sessionId ?? '',
+          secret: this.sessionData?.secret ?? '',
         });
       }
       return;

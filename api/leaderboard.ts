@@ -1,78 +1,50 @@
-import { put, list, get } from '@vercel/blob';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Redis } from '@upstash/redis';
 
-interface LeaderboardEntry {
-  initials: string;
-  score: number;
-}
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL!,
+  token: process.env.KV_REST_API_TOKEN!,
+});
 
-const MAX_ENTRIES = 10;
-
-function blobKey(seed: number): string {
-  return `leaderboard_${seed}.json`;
-}
-
-async function readEntries(seed: number): Promise<LeaderboardEntry[]> {
-  try {
-    const { blobs } = await list({ prefix: blobKey(seed) });
-    if (blobs.length === 0) return [];
-    const resp = await get(blobs[0].url, { access: 'private' });
-    if (!resp) return [];
-    const text = await new Response(resp.stream).text();
-    const data = JSON.parse(text);
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeEntries(seed: number, entries: LeaderboardEntry[]): Promise<void> {
-  await put(blobKey(seed), JSON.stringify(entries), {
-    access: 'private',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  });
-}
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS headers for local dev
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+export default async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
   }
 
-  if (req.method === 'GET') {
-    const seed = Number(req.query.seed);
-    if (!seed || isNaN(seed)) {
-      return res.status(400).json({ error: 'seed query parameter required' });
-    }
-    const entries = await readEntries(seed);
-    return res.status(200).json(entries);
+  if (req.method !== 'GET') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  if (req.method === 'POST') {
-    const { seed, initials, score } = req.body ?? {};
-    if (!seed || typeof initials !== 'string' || typeof score !== 'number') {
-      return res.status(400).json({ error: 'seed, initials, and score required' });
-    }
-
-    const cleaned = initials.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
-    if (cleaned.length !== 3) {
-      return res.status(400).json({ error: 'initials must be 3 letters' });
-    }
-
-    const entries = await readEntries(seed);
-    entries.push({ initials: cleaned, score });
-    entries.sort((a, b) => b.score - a.score);
-    const trimmed = entries.slice(0, MAX_ENTRIES);
-    await writeEntries(seed, trimmed);
-
-    const rank = trimmed.findIndex(e => e.initials === cleaned && e.score === score) + 1;
-    return res.status(200).json({ rank });
+  const url = new URL(req.url);
+  const seed = Number(url.searchParams.get('seed'));
+  if (!seed || isNaN(seed)) {
+    return Response.json({ error: 'seed query parameter required' }, { status: 400 });
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  const leaderboardKey = `leaderboard:${seed}`;
+
+  // Get top 10, highest scores first (ZREVRANGE returns [member, score, member, score, ...])
+  const results = await redis.zrange(leaderboardKey, 0, 9, { rev: true, withScores: true });
+
+  // results is an array of { member, score } or alternating values depending on SDK version
+  // @upstash/redis zrange with withScores returns: [value, score, value, score, ...]
+  const entries: { initials: string; score: number }[] = [];
+
+  for (let i = 0; i < results.length; i += 2) {
+    const member = String(results[i]);
+    const score = Number(results[i + 1]);
+    // Member format: "ABC:sessionId" — extract initials
+    const initials = member.split(':')[0];
+    entries.push({ initials, score });
+  }
+
+  return Response.json(entries, {
+    headers: { 'Access-Control-Allow-Origin': '*' },
+  });
 }

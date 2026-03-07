@@ -4,6 +4,15 @@ import { Leaderboard } from '../src/logic/Leaderboard';
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
+// Mock crypto.subtle for HMAC signing
+const mockSign = vi.fn().mockResolvedValue(new Uint8Array([0xab, 0xcd, 0xef]).buffer);
+vi.stubGlobal('crypto', {
+  subtle: {
+    importKey: vi.fn().mockResolvedValue('mock-key'),
+    sign: mockSign,
+  },
+});
+
 function jsonResponse(data: unknown, ok = true) {
   return Promise.resolve({
     ok,
@@ -14,6 +23,7 @@ function jsonResponse(data: unknown, ok = true) {
 describe('Leaderboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSign.mockResolvedValue(new Uint8Array([0xab, 0xcd, 0xef]).buffer);
   });
 
   describe('getEntries', () => {
@@ -52,11 +62,11 @@ describe('Leaderboard', () => {
       expect(entries).toHaveLength(1);
     });
 
-    it('sorts by score descending', async () => {
+    it('preserves server order (already sorted by score descending)', async () => {
       mockFetch.mockReturnValueOnce(jsonResponse([
-        { initials: 'LOW', score: 50 },
         { initials: 'HIG', score: 500 },
         { initials: 'MID', score: 200 },
+        { initials: 'LOW', score: 50 },
       ]));
       const lb = new Leaderboard();
       const entries = await lb.getEntries(20260307);
@@ -65,37 +75,42 @@ describe('Leaderboard', () => {
   });
 
   describe('addEntry', () => {
-    it('posts entry and returns rank', async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ rank: 2 }));
+    it('posts entry with HMAC and returns rank', async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ rank: 2, valid: true }));
       const lb = new Leaderboard();
-      const rank = await lb.addEntry(20260307, 'abc', 400);
+      const rank = await lb.addEntry(20260307, 'abc', 400, 'session-123', 'secret-456');
       expect(rank).toBe(2);
-      expect(mockFetch).toHaveBeenCalledWith('/api/leaderboard', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/submit-score', expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed: 20260307, initials: 'ABC', score: 400 }),
-      });
+      }));
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.sessionId).toBe('session-123');
+      expect(body.seed).toBe(20260307);
+      expect(body.initials).toBe('ABC');
+      expect(body.score).toBe(400);
+      expect(body.signature).toBeDefined();
     });
 
     it('uppercases initials', async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ rank: 1 }));
       const lb = new Leaderboard();
-      await lb.addEntry(20260307, 'xyz', 100);
+      await lb.addEntry(20260307, 'xyz', 100, 'sess', 'sec');
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.initials).toBe('XYZ');
     });
 
     it('rejects invalid initials', async () => {
       const lb = new Leaderboard();
-      expect(await lb.addEntry(20260307, 'AB', 100)).toBe(-1);
-      expect(await lb.addEntry(20260307, 'A1B', 100)).toBe(-1);
+      expect(await lb.addEntry(20260307, 'AB', 100, 's', 'k')).toBe(-1);
+      expect(await lb.addEntry(20260307, 'A1B', 100, 's', 'k')).toBe(-1);
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('returns -1 on fetch error', async () => {
       mockFetch.mockRejectedValueOnce(new Error('network'));
       const lb = new Leaderboard();
-      expect(await lb.addEntry(20260307, 'AAA', 100)).toBe(-1);
+      expect(await lb.addEntry(20260307, 'AAA', 100, 's', 'k')).toBe(-1);
     });
   });
 
@@ -109,8 +124,9 @@ describe('Leaderboard', () => {
     });
 
     it('returns true when score beats lowest on full board', async () => {
+      // Server returns sorted descending
       const entries = Array.from({ length: 10 }, (_, i) => ({
-        initials: 'AAA', score: (i + 1) * 100,
+        initials: 'AAA', score: (10 - i) * 100,
       }));
       mockFetch.mockReturnValueOnce(jsonResponse(entries));
       const lb = new Leaderboard();
@@ -118,12 +134,39 @@ describe('Leaderboard', () => {
     });
 
     it('returns false when score is too low on full board', async () => {
+      // Server returns sorted descending: 1000, 900, ..., 100
       const entries = Array.from({ length: 10 }, (_, i) => ({
-        initials: 'AAA', score: (i + 1) * 100,
+        initials: 'AAA', score: (10 - i) * 100,
       }));
       mockFetch.mockReturnValueOnce(jsonResponse(entries));
       const lb = new Leaderboard();
       expect(await lb.isHighScore(20260307, 50)).toBe(false);
+    });
+  });
+
+  describe('startSession', () => {
+    it('returns session data on success', async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ sessionId: 'abc', secret: 'def' }));
+      const lb = new Leaderboard();
+      const session = await lb.startSession(20260307);
+      expect(session).toEqual({ sessionId: 'abc', secret: 'def' });
+      expect(mockFetch).toHaveBeenCalledWith('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seed: 20260307 }),
+      });
+    });
+
+    it('returns null on fetch error', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('network'));
+      const lb = new Leaderboard();
+      expect(await lb.startSession(20260307)).toBeNull();
+    });
+
+    it('returns null on non-ok response', async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({}, false));
+      const lb = new Leaderboard();
+      expect(await lb.startSession(20260307)).toBeNull();
     });
   });
 });

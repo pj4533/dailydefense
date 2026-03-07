@@ -6,6 +6,8 @@ export class GameOverScene extends Phaser.Scene {
   private score: number = 0;
   private seed: number = 0;
   private seedLabel: string = '';
+  private sessionId: string = '';
+  private secret: string = '';
   private initials: string[] = [];
   private slotTexts: Phaser.GameObjects.Text[] = [];
   private leaderboard!: Leaderboard;
@@ -15,10 +17,12 @@ export class GameOverScene extends Phaser.Scene {
     super({ key: 'GameOverScene' });
   }
 
-  init(data: { score: number; seed: number; seedLabel: string }): void {
+  init(data: { score: number; seed: number; seedLabel: string; sessionId: string; secret: string }): void {
     this.score = data.score ?? 0;
     this.seed = data.seed ?? 0;
     this.seedLabel = data.seedLabel ?? '';
+    this.sessionId = data.sessionId ?? '';
+    this.secret = data.secret ?? '';
     this.initials = [];
     this.slotTexts = [];
     this.confirmed = false;
@@ -97,7 +101,7 @@ export class GameOverScene extends Phaser.Scene {
       if (this.initials.length === 3) {
         this.confirmed = true;
         const initialsStr = this.initials.join('');
-        this.leaderboard.addEntry(this.seed, initialsStr, this.score).then(() => {
+        this.leaderboard.addEntry(this.seed, initialsStr, this.score, this.sessionId, this.secret).then(() => {
           this.scene.start('LeaderboardScene', {
             score: this.score,
             initials: initialsStr,
