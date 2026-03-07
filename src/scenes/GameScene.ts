@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GameEngine } from '../logic/GameEngine';
 import { Tower } from '../logic/Tower';
+import { Enemy } from '../logic/Enemy';
 import { TowerType, CellType } from '../types';
 import {
   TILE_SIZE, GRID_COLS, GRID_ROWS, GAME_HEIGHT,
@@ -8,12 +9,27 @@ import {
   PATH_WAYPOINTS, WAVES, TOWER_CONFIGS,
 } from '../config';
 
+// Map tower types to spritesheet keys and animation config
+const TOWER_SPRITE: Record<string, { key: string; idle: string }> = {
+  [TowerType.LADYBUG]: { key: 'ladybug', idle: 'ladybug_idle' },
+  [TowerType.MANTIS]: { key: 'dragonfly', idle: 'dragonfly_idle' },
+};
+
+// Map enemy colors to spritesheet keys and animation config
+const ENEMY_SPRITE: Record<number, { key: string; move: string }> = {
+  0x88cc44: { key: 'larva', move: 'larva_move' },       // aphid
+  0x664422: { key: 'scarab', move: 'scarab_move' },      // ant
+  0x336633: { key: 'rhino_beetle', move: 'rhino_move' }, // beetle
+};
+
 export class GameScene extends Phaser.Scene {
   private engine!: GameEngine;
   private selectedTowerType: TowerType = TowerType.LADYBUG;
 
-  private gridGraphics!: Phaser.GameObjects.Graphics;
-  private entityGraphics!: Phaser.GameObjects.Graphics;
+  private overlayGraphics!: Phaser.GameObjects.Graphics;
+  private towerSprites: Map<Tower, Phaser.GameObjects.Sprite> = new Map();
+  private enemySprites: Map<Enemy, Phaser.GameObjects.Sprite> = new Map();
+  private ghostSprite!: Phaser.GameObjects.Sprite;
 
   private moneyText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
@@ -37,6 +53,29 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
+  preload(): void {
+    // Map tiles
+    this.load.image('grass', 'assets/grass.png');
+    this.load.image('path_h', 'assets/path_h.png');
+    this.load.image('path_v', 'assets/path_v.png');
+    this.load.image('path_corner_se', 'assets/path_corner_se.png');
+    this.load.image('path_corner_sw', 'assets/path_corner_sw.png');
+    this.load.image('path_corner_ne', 'assets/path_corner_ne.png');
+    this.load.image('path_corner_nw', 'assets/path_corner_nw.png');
+
+    // Spritesheets - all 32x32 frames
+    // Ladybug: 256x192 = 8 cols x 6 rows (Idle, Idle2, Movement, Flight, Death, Death2)
+    this.load.spritesheet('ladybug', 'assets/sprites/ladybug.png', { frameWidth: 32, frameHeight: 32 });
+    // Dragonfly: 224x128 = 7 cols x 4 rows (Idle, Movement, Damage, Death)
+    this.load.spritesheet('dragonfly', 'assets/sprites/dragonfly.png', { frameWidth: 32, frameHeight: 32 });
+    // Bug Larva: 192x128 = 6 cols x 4 rows (Idle, Movement, Damage, Death)
+    this.load.spritesheet('larva', 'assets/sprites/larva.png', { frameWidth: 32, frameHeight: 32 });
+    // Scarab: 160x160 = 5 cols x 5 rows (Idle, Movement, Attack, Damage, Death)
+    this.load.spritesheet('scarab', 'assets/sprites/scarab.png', { frameWidth: 32, frameHeight: 32 });
+    // Giant Rhino Beetle: 256x160 = 8 cols x 5 rows (Idle, Movement, Attack, Damage, Death)
+    this.load.spritesheet('rhino_beetle', 'assets/sprites/rhino_beetle.png', { frameWidth: 32, frameHeight: 32 });
+  }
+
   create(): void {
     this.engine = new GameEngine(
       GRID_COLS, GRID_ROWS, TILE_SIZE,
@@ -44,10 +83,17 @@ export class GameScene extends Phaser.Scene {
       STARTING_MONEY, STARTING_LIVES,
     );
 
-    this.gridGraphics = this.add.graphics();
-    this.entityGraphics = this.add.graphics();
+    this.createAnimations();
+    this.createGrid();
 
-    this.drawGrid();
+    this.ghostSprite = this.add.sprite(0, 0, 'ladybug');
+    this.ghostSprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
+    this.ghostSprite.setDepth(5);
+    this.ghostSprite.setVisible(false);
+
+    this.overlayGraphics = this.add.graphics();
+    this.overlayGraphics.setDepth(10);
+
     this.createUI();
 
     this.input.on('pointerdown', this.handlePointerDown, this);
@@ -55,49 +101,73 @@ export class GameScene extends Phaser.Scene {
     this.input.on('pointerup', this.handlePointerUp, this);
   }
 
-  private drawGrid(): void {
-    this.gridGraphics.clear();
+  private createAnimations(): void {
+    // Ladybug: 8 cols per row
+    this.anims.create({
+      key: 'ladybug_idle',
+      frames: this.anims.generateFrameNumbers('ladybug', { start: 0, end: 7 }),
+      frameRate: 8,
+      repeat: -1,
+    });
 
+    // Dragonfly: 7 cols per row — row 0 has ~4 frames
+    this.anims.create({
+      key: 'dragonfly_idle',
+      frames: this.anims.generateFrameNumbers('dragonfly', { start: 0, end: 3 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+
+    // Bug Larva: 6 cols per row — row 1 = movement
+    this.anims.create({
+      key: 'larva_move',
+      frames: this.anims.generateFrameNumbers('larva', { start: 6, end: 11 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    // Scarab: 5 cols per row — row 1 = movement
+    this.anims.create({
+      key: 'scarab_move',
+      frames: this.anims.generateFrameNumbers('scarab', { start: 5, end: 9 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    // Giant Rhino Beetle: 8 cols per row — row 1 = movement
+    this.anims.create({
+      key: 'rhino_move',
+      frames: this.anims.generateFrameNumbers('rhino_beetle', { start: 8, end: 15 }),
+      frameRate: 8,
+      repeat: -1,
+    });
+  }
+
+  private createGrid(): void {
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
-        const cell = this.engine.map.getCell(col, row);
-        const x = col * TILE_SIZE;
-        const y = row * TILE_SIZE;
-
-        let fillColor: number;
-        switch (cell) {
-          case CellType.PATH:
-            fillColor = 0x8B7355;
-            break;
-          case CellType.TOWER: {
-            const isSelected = this.selectedTower?.col === col && this.selectedTower?.row === row;
-            fillColor = isSelected ? 0x3d7a37 : 0x2d5a27;
-            break;
-          }
-          case CellType.EMPTY:
-          default:
-            fillColor = 0x3d2b1f;
-            break;
-        }
-
-        this.gridGraphics.fillStyle(fillColor);
-        this.gridGraphics.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-
-        this.gridGraphics.lineStyle(1, 0x4a3728);
-        this.gridGraphics.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+        const x = col * TILE_SIZE + TILE_SIZE / 2;
+        const y = row * TILE_SIZE + TILE_SIZE / 2;
+        const key = this.getTileKey(col, row);
+        this.add.image(x, y, key).setDisplaySize(TILE_SIZE, TILE_SIZE).setDepth(0);
       }
     }
+  }
 
-    // Draw drag ghost overlay
-    if (this.isDragging) {
-      const canPlace = this.engine.map.canPlaceTower(this.dragGhostCol, this.dragGhostRow);
-      const ghostColor = canPlace ? 0x00ff00 : 0xff0000;
-      this.gridGraphics.fillStyle(ghostColor, 0.3);
-      this.gridGraphics.fillRect(
-        this.dragGhostCol * TILE_SIZE, this.dragGhostRow * TILE_SIZE,
-        TILE_SIZE, TILE_SIZE,
-      );
-    }
+  private getTileKey(col: number, row: number): string {
+    if (this.engine.map.getCell(col, row) !== CellType.PATH) return 'grass';
+
+    const hasN = this.engine.map.getCell(col, row - 1) === CellType.PATH;
+    const hasS = this.engine.map.getCell(col, row + 1) === CellType.PATH;
+    const hasE = this.engine.map.getCell(col + 1, row) === CellType.PATH;
+    const hasW = this.engine.map.getCell(col - 1, row) === CellType.PATH;
+
+    if (hasW && hasS && !hasN && !hasE) return 'path_corner_sw';
+    if (hasN && hasE && !hasS && !hasW) return 'path_corner_ne';
+    if (hasW && hasN && !hasS && !hasE) return 'path_corner_nw';
+    if (hasS && hasE && !hasN && !hasW) return 'path_corner_se';
+    if (hasN || hasS) return 'path_v';
+    return 'path_h';
   }
 
   private createUI(): void {
@@ -136,15 +206,15 @@ export class GameScene extends Phaser.Scene {
       GRID_COLS * TILE_SIZE / 2,
       GAME_HEIGHT / 2,
       '',
-      { fontSize: '32px', color: '#ffffff', fontFamily: 'monospace' },
-    ).setOrigin(0.5);
+      { fontSize: '32px', color: '#ffffff', fontFamily: 'monospace',
+        stroke: '#000000', strokeThickness: 4 },
+    ).setOrigin(0.5).setDepth(20);
 
     this.ladybugBtn.on('pointerdown', () => {
       this.selectedTowerType = TowerType.LADYBUG;
       this.selectedTower = null;
       this.updateButtonHighlights();
       this.updateSellButton();
-      this.drawGrid();
     });
 
     this.mantisBtn.on('pointerdown', () => {
@@ -152,7 +222,6 @@ export class GameScene extends Phaser.Scene {
       this.selectedTower = null;
       this.updateButtonHighlights();
       this.updateSellButton();
-      this.drawGrid();
     });
 
     startWaveBtn.on('pointerdown', () => {
@@ -164,7 +233,6 @@ export class GameScene extends Phaser.Scene {
         this.engine.removeTower(this.selectedTower.col, this.selectedTower.row);
         this.selectedTower = null;
         this.updateSellButton();
-        this.drawGrid();
       }
     });
 
@@ -206,19 +274,13 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Clicking empty space with a selected tower → deselect
     if (this.selectedTower) {
       this.selectedTower = null;
       this.updateSellButton();
-      this.drawGrid();
       return;
     }
 
-    // Place new tower
-    const placed = this.engine.placeTower(col, row, this.selectedTowerType);
-    if (placed) {
-      this.drawGrid();
-    }
+    this.engine.placeTower(col, row, this.selectedTowerType);
   }
 
   private handlePointerMove(pointer: Phaser.Input.Pointer): void {
@@ -235,7 +297,6 @@ export class GameScene extends Phaser.Scene {
     if (this.isDragging) {
       this.dragGhostCol = Math.floor(pointer.x / TILE_SIZE);
       this.dragGhostRow = Math.floor(pointer.y / TILE_SIZE);
-      this.drawGrid();
     }
   }
 
@@ -247,19 +308,15 @@ export class GameScene extends Phaser.Scene {
         this.dragStartCol, this.dragStartRow,
         this.dragGhostCol, this.dragGhostRow,
       );
-      // Clear selection after move
       this.selectedTower = null;
       this.updateSellButton();
-      this.drawGrid();
     } else if (this.dragTower) {
-      // Was a click, not a drag → toggle selection
       if (this.selectedTower === this.dragTower) {
         this.selectedTower = null;
       } else {
         this.selectedTower = this.dragTower;
       }
       this.updateSellButton();
-      this.drawGrid();
     }
 
     this.dragTower = null;
@@ -271,88 +328,135 @@ export class GameScene extends Phaser.Scene {
     const dt = delta / 1000;
     this.engine.update(dt);
 
-    // Guard: if selected tower was removed externally
     if (this.selectedTower && !this.engine.towers.includes(this.selectedTower)) {
       this.selectedTower = null;
       this.updateSellButton();
-      this.drawGrid();
     }
 
-    this.drawEntities();
+    this.syncTowerSprites();
+    this.syncEnemySprites();
+    this.drawOverlays();
     this.updateUI();
   }
 
-  private drawEntities(): void {
-    this.entityGraphics.clear();
-
-    for (const tower of this.engine.towers) {
-      const isSelected = this.selectedTower === tower;
-      const isDragSource = this.isDragging && this.dragTower === tower;
-
-      this.entityGraphics.fillStyle(tower.color, isDragSource ? 0.3 : 1);
-      const size = TILE_SIZE * 0.7;
-      this.entityGraphics.fillRect(
-        tower.x - size / 2, tower.y - size / 2,
-        size, size,
-      );
-
-      if (isSelected) {
-        // Yellow border
-        this.entityGraphics.lineStyle(3, 0xffff00);
-        this.entityGraphics.strokeRect(
-          tower.x - size / 2, tower.y - size / 2,
-          size, size,
-        );
-        // Range circle - prominent
-        this.entityGraphics.lineStyle(2, 0xffff00, 0.5);
-        this.entityGraphics.strokeCircle(tower.x, tower.y, tower.range);
-        this.entityGraphics.fillStyle(0xffff00, 0.08);
-        this.entityGraphics.fillCircle(tower.x, tower.y, tower.range);
-      } else {
-        this.entityGraphics.lineStyle(1, tower.color, 0.2);
-        this.entityGraphics.strokeCircle(tower.x, tower.y, tower.range);
+  private syncTowerSprites(): void {
+    for (const [tower, sprite] of this.towerSprites) {
+      if (!this.engine.towers.includes(tower)) {
+        sprite.destroy();
+        this.towerSprites.delete(tower);
       }
     }
 
-    // Draw drag ghost tower at cursor position
-    if (this.isDragging && this.dragTower) {
-      const ghostX = this.dragGhostCol * TILE_SIZE + TILE_SIZE / 2;
-      const ghostY = this.dragGhostRow * TILE_SIZE + TILE_SIZE / 2;
-      const size = TILE_SIZE * 0.7;
-      this.entityGraphics.fillStyle(this.dragTower.color, 0.7);
-      this.entityGraphics.fillRect(
-        ghostX - size / 2, ghostY - size / 2,
-        size, size,
-      );
-      // Range circle at ghost position
-      this.entityGraphics.lineStyle(1, this.dragTower.color, 0.3);
-      this.entityGraphics.strokeCircle(ghostX, ghostY, this.dragTower.range);
+    for (const tower of this.engine.towers) {
+      let sprite = this.towerSprites.get(tower);
+      if (!sprite) {
+        const cfg = TOWER_SPRITE[tower.type];
+        sprite = this.add.sprite(tower.x, tower.y, cfg.key);
+        sprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
+        sprite.setDepth(2);
+        sprite.play(cfg.idle);
+        this.towerSprites.set(tower, sprite);
+      }
+      sprite.setPosition(tower.x, tower.y);
+      const isDragSource = this.isDragging && this.dragTower === tower;
+      sprite.setAlpha(isDragSource ? 0.3 : 1);
+    }
+  }
+
+  private syncEnemySprites(): void {
+    for (const [enemy, sprite] of this.enemySprites) {
+      if (!this.engine.enemies.includes(enemy)) {
+        sprite.destroy();
+        this.enemySprites.delete(enemy);
+      }
     }
 
     for (const enemy of this.engine.enemies) {
-      const size = TILE_SIZE * 0.5;
+      let sprite = this.enemySprites.get(enemy);
+      if (!sprite) {
+        const cfg = ENEMY_SPRITE[enemy.color] || ENEMY_SPRITE[0x88cc44];
+        sprite = this.add.sprite(enemy.x, enemy.y, cfg.key);
+        sprite.setDisplaySize(TILE_SIZE * 0.8, TILE_SIZE * 0.8);
+        sprite.setDepth(3);
+        sprite.play(cfg.move);
+        this.enemySprites.set(enemy, sprite);
+      }
+      sprite.setPosition(enemy.x, enemy.y);
 
-      this.entityGraphics.fillStyle(enemy.color);
-      this.entityGraphics.fillRect(
-        enemy.x - size / 2, enemy.y - size / 2,
-        size, size,
+      // Flip sprite based on horizontal movement direction
+      const path = this.engine.map.getPathWorldPositions();
+      if (enemy.currentWaypointIndex < path.length) {
+        const target = path[enemy.currentWaypointIndex];
+        const dx = target.x - enemy.x;
+        // Default sprites face right; flip when moving left
+        if (Math.abs(dx) > 1) {
+          sprite.setFlipX(dx < 0);
+        }
+      }
+    }
+  }
+
+  private drawOverlays(): void {
+    this.overlayGraphics.clear();
+
+    for (const tower of this.engine.towers) {
+      if (tower === this.selectedTower) {
+        this.overlayGraphics.lineStyle(3, 0xffff00);
+        this.overlayGraphics.strokeRect(
+          tower.x - TILE_SIZE / 2, tower.y - TILE_SIZE / 2,
+          TILE_SIZE, TILE_SIZE,
+        );
+        this.overlayGraphics.lineStyle(2, 0xffff00, 0.5);
+        this.overlayGraphics.strokeCircle(tower.x, tower.y, tower.range);
+        this.overlayGraphics.fillStyle(0xffff00, 0.08);
+        this.overlayGraphics.fillCircle(tower.x, tower.y, tower.range);
+      } else {
+        this.overlayGraphics.lineStyle(1, 0xffffff, 0.2);
+        this.overlayGraphics.strokeCircle(tower.x, tower.y, tower.range);
+      }
+    }
+
+    if (this.isDragging && this.dragTower) {
+      const ghostX = this.dragGhostCol * TILE_SIZE + TILE_SIZE / 2;
+      const ghostY = this.dragGhostRow * TILE_SIZE + TILE_SIZE / 2;
+      const cfg = TOWER_SPRITE[this.dragTower.type];
+
+      this.ghostSprite.setTexture(cfg.key);
+      this.ghostSprite.setPosition(ghostX, ghostY);
+      this.ghostSprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
+      this.ghostSprite.setAlpha(0.6);
+      this.ghostSprite.setVisible(true);
+
+      const canPlace = this.engine.map.canPlaceTower(this.dragGhostCol, this.dragGhostRow);
+      this.overlayGraphics.fillStyle(canPlace ? 0x00ff00 : 0xff0000, 0.2);
+      this.overlayGraphics.fillRect(
+        this.dragGhostCol * TILE_SIZE, this.dragGhostRow * TILE_SIZE,
+        TILE_SIZE, TILE_SIZE,
       );
+      this.overlayGraphics.lineStyle(1, 0xffffff, 0.3);
+      this.overlayGraphics.strokeCircle(ghostX, ghostY, this.dragTower.range);
+    } else {
+      this.ghostSprite.setVisible(false);
+    }
 
+    for (const enemy of this.engine.enemies) {
       const barWidth = TILE_SIZE * 0.6;
       const barHeight = 4;
-      const barY = enemy.y - size / 2 - 8;
-      this.entityGraphics.fillStyle(0x333333);
-      this.entityGraphics.fillRect(enemy.x - barWidth / 2, barY, barWidth, barHeight);
+      const size = TILE_SIZE * 0.8;
+      const barY = enemy.y - size / 2 - 6;
+
+      this.overlayGraphics.fillStyle(0x333333);
+      this.overlayGraphics.fillRect(enemy.x - barWidth / 2, barY, barWidth, barHeight);
 
       const healthPct = enemy.health / enemy.maxHealth;
       const healthColor = healthPct > 0.5 ? 0x00ff00 : healthPct > 0.25 ? 0xffff00 : 0xff0000;
-      this.entityGraphics.fillStyle(healthColor);
-      this.entityGraphics.fillRect(enemy.x - barWidth / 2, barY, barWidth * healthPct, barHeight);
+      this.overlayGraphics.fillStyle(healthColor);
+      this.overlayGraphics.fillRect(enemy.x - barWidth / 2, barY, barWidth * healthPct, barHeight);
     }
 
     for (const proj of this.engine.projectiles) {
-      this.entityGraphics.fillStyle(0xffffff);
-      this.entityGraphics.fillCircle(proj.x, proj.y, 3);
+      this.overlayGraphics.fillStyle(0xffff00);
+      this.overlayGraphics.fillCircle(proj.x, proj.y, 3);
     }
   }
 
@@ -365,10 +469,10 @@ export class GameScene extends Phaser.Scene {
 
     if (this.engine.state.gameOver) {
       this.messageText.setText('GARDEN DESTROYED!');
-      this.messageText.setColor('#8B4513');
+      this.messageText.setColor('#ff4444');
     } else if (this.engine.state.victory) {
       this.messageText.setText('GARDEN SAVED!');
-      this.messageText.setColor('#228B22');
+      this.messageText.setColor('#44ff44');
     }
   }
 }
