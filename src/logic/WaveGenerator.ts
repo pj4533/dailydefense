@@ -4,8 +4,8 @@ import { ENEMY_CONFIGS } from '../config';
 export function generateWave(waveNumber: number): WaveConfig {
   const enemies: WaveConfig['enemies'] = [];
 
-  const spawnInterval = Math.max(0.3, 1.0 - waveNumber * 0.05);
-  const count = 5 + Math.floor(waveNumber * 1.5);
+  const spawnInterval = Math.max(0.15, 0.8 - waveNumber * 0.15);
+  const count = 8 + Math.floor(waveNumber * 3.5);
 
   // Aphids always present
   enemies.push({
@@ -14,21 +14,21 @@ export function generateWave(waveNumber: number): WaveConfig {
     spawnInterval: spawnInterval,
   });
 
-  // Ants from wave 4+
-  if (waveNumber >= 4) {
+  // Ants from wave 1+
+  if (waveNumber >= 1) {
     enemies.push({
       config: scaleEnemy(ENEMY_CONFIGS.ant, waveNumber),
-      count: Math.floor(count * 0.6),
+      count: Math.floor(count * 0.8),
       spawnInterval: spawnInterval,
     });
   }
 
-  // Beetles from wave 8+
-  if (waveNumber >= 8) {
+  // Beetles from wave 3+
+  if (waveNumber >= 3) {
     enemies.push({
       config: scaleEnemy(ENEMY_CONFIGS.beetle, waveNumber),
-      count: Math.floor(count * 0.3),
-      spawnInterval: spawnInterval * 1.5,
+      count: Math.floor(count * 0.5),
+      spawnInterval: spawnInterval,
     });
   }
 
@@ -37,8 +37,8 @@ export function generateWave(waveNumber: number): WaveConfig {
 
 function scaleEnemy(base: EnemyConfig, waveNumber: number): EnemyConfig {
   return {
-    health: Math.round(base.health * (1 + 0.12 * waveNumber)),
-    speed: Math.min(base.speed * (1 + 0.03 * waveNumber), base.speed * 2),
+    health: Math.round(base.health * (1 + 0.4 * waveNumber)),
+    speed: Math.min(base.speed * (1 + 0.08 * waveNumber), base.speed * 2.5),
     reward: base.reward + Math.floor(waveNumber * 0.5),
     color: base.color,
   };
