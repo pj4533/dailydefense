@@ -53,24 +53,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    const { seed, initials, score } = req.body ?? {};
-    if (!seed || typeof initials !== 'string' || typeof score !== 'number') {
-      return res.status(400).json({ error: 'seed, initials, and score required' });
+    try {
+      const { seed, initials, score } = req.body ?? {};
+      if (!seed || typeof initials !== 'string' || typeof score !== 'number') {
+        return res.status(400).json({ error: 'seed, initials, and score required' });
+      }
+
+      const cleaned = initials.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+      if (cleaned.length !== 3) {
+        return res.status(400).json({ error: 'initials must be 3 letters' });
+      }
+
+      const entries = await readEntries(seed);
+      entries.push({ initials: cleaned, score });
+      entries.sort((a, b) => b.score - a.score);
+      const trimmed = entries.slice(0, MAX_ENTRIES);
+      await writeEntries(seed, trimmed);
+
+      const rank = trimmed.findIndex(e => e.initials === cleaned && e.score === score) + 1;
+      return res.status(200).json({ rank });
+    } catch (err) {
+      console.error('POST error:', err);
+      return res.status(500).json({ error: String(err) });
     }
-
-    const cleaned = initials.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
-    if (cleaned.length !== 3) {
-      return res.status(400).json({ error: 'initials must be 3 letters' });
-    }
-
-    const entries = await readEntries(seed);
-    entries.push({ initials: cleaned, score });
-    entries.sort((a, b) => b.score - a.score);
-    const trimmed = entries.slice(0, MAX_ENTRIES);
-    await writeEntries(seed, trimmed);
-
-    const rank = trimmed.findIndex(e => e.initials === cleaned && e.score === score) + 1;
-    return res.status(200).json({ rank });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
