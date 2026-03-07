@@ -10,6 +10,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npx vitest run tests/GameState.test.ts` — Run a single test file
 - `npx tsc --noEmit` — Type-check only
 
+## Deployment
+
+Hosted on **Vercel** at [gardendefense.vercel.app](https://gardendefense.vercel.app). GitHub repo is connected — **pushing to `main` auto-deploys to production**. No need to run `vercel --prod` manually.
+
+- **Vercel CLI** is linked to the project (`.vercel/` directory, gitignored)
+- **Environment variables**: `BLOB_READ_WRITE_TOKEN` is set in Vercel for all environments
+- To pull env vars locally: `vercel env pull .env.local`
+
 ## Architecture
 
 Browser-based garden defense game using **Phaser 3** + **TypeScript**, bundled with **Vite**.
@@ -20,11 +28,32 @@ Towers are **trees that house beneficial predators** (ladybugs, mantises). Each 
 
 ### Logic/Rendering Separation
 
-The codebase is split into a **pure logic layer** (`src/logic/`) and a **Phaser rendering layer** (`src/scenes/`). This is the most important architectural decision:
+The codebase is split into a **pure logic layer** (`src/logic/`), a **Phaser rendering layer** (`src/scenes/`), and a **serverless API** (`api/`). This is the most important architectural decision:
 
 - **`src/logic/`** — All game mechanics as plain TypeScript classes with zero Phaser dependencies. Fully unit-testable.
-- **`src/scenes/GameScene.ts`** — Thin Phaser scene that reads engine state and draws colored rectangles. No game logic here.
+- **`src/scenes/`** — Phaser scenes that read engine state and render. No game logic here.
+- **`api/`** — Vercel serverless functions (leaderboard backend).
 - **`src/main.ts`** — Phaser game bootstrap (excluded from coverage).
+
+### Daily Seeds & Map Generation
+
+Every day gets a unique map and leaderboard:
+
+- **`src/logic/dailySeed.ts`** — `getDailySeed()` returns `YYYYMMDD` as an integer (e.g. `20260307`). `getDailySeedLabel()` returns a display string like `"MAR 07"`.
+- **`src/logic/seedRng.ts`** — `mulberry32(seed)` is a deterministic PRNG seeded by the daily seed.
+- **`src/logic/MapGenerator.ts`** — `generateRandomPath()` uses the seeded RNG to produce a random path layout. Same seed = same map for all players that day.
+- **`src/logic/WaveGenerator.ts`** — `generateWave()` produces endless scaling waves.
+
+### Leaderboard System
+
+Cloud leaderboard powered by **Vercel Blob** (private access store):
+
+- **`api/leaderboard.ts`** — Serverless function handling GET (fetch scores) and POST (submit score). Stores data as `leaderboard_{seed}.json` in Vercel Blob. Each daily seed has its own leaderboard, so scores reset naturally when the day changes.
+- **`src/logic/Leaderboard.ts`** — Client-side class that calls `/api/leaderboard` endpoints.
+- **`src/scenes/GameOverScene.ts`** — Initials entry screen (3-letter arcade style). Submits score then transitions to leaderboard.
+- **`src/scenes/LeaderboardScene.ts`** — Displays top 10 scores for the current daily seed. Accessible mid-game via the "Scores" HUD button.
+
+**Important**: The Blob store uses **private access**. Reads must use `get()` from `@vercel/blob` (not plain `fetch`), and writes use `access: 'private'`.
 
 ### Game Engine Flow
 
@@ -43,7 +72,13 @@ The codebase is split into a **pure logic layer** (`src/logic/`) and a **Phaser 
 - **GameEngine** — Central orchestrator; owns all entities and delegates to subsystems
 - **GameMap** — Grid (CellType[][]), path marking from waypoints, tower placement validation
 - **WaveManager** — Steps through wave/group/enemy indices with spawn timers
-- **GameState** — Money, lives, game-over/victory flags
+- **GameState** — Money, lives, game-over/victory flags, score tracking
+
+### Scenes
+
+- **GameScene** — Main gameplay: tower placement/dragging, enemy rendering, HUD, wave control
+- **GameOverScene** — Arcade-style 3-letter initials entry, submits score to cloud leaderboard
+- **LeaderboardScene** — Retro top-10 display with blinking highlight for current player
 
 ### Configuration
 

@@ -8,7 +8,13 @@
 
 Defend your garden from pest invasions! A browser-based tower defense game built with Phaser 3 and TypeScript. Plant trees that house beneficial predators to fight off waves of garden pests.
 
-## Play
+**Play now at [gardendefense.vercel.app](https://gardendefense.vercel.app)**
+
+## Daily Challenge
+
+Every day brings a **new randomly generated map** — same map for all players, seeded by the date. Compete on the **cloud leaderboard** for the highest score each day. Scores reset when the daily map changes.
+
+## Play Locally
 
 ```bash
 npm install
@@ -21,9 +27,12 @@ Open the URL Vite gives you. Place towers on the soil cells, then hit **Start Wa
 
 - **Select a tower** at the bottom (Ladybug or Mantis)
 - **Click empty cells** to place towers (costs money)
+- **Drag towers** to reposition them
+- **Click a tower** to select it, then **Sell** to get your money back
 - **Start Wave** to send pests down the path
 - Pests follow the dirt path — eliminate them before they destroy your garden
-- Survive all 5 waves to save your garden
+- Endless waves with increasing difficulty — survive as long as you can!
+- When your garden is destroyed, enter your **3-letter initials** for the leaderboard
 
 | Tower | Cost | Damage | Fire Rate | Range | Predator |
 |-------|------|--------|-----------|-------|----------|
@@ -44,3 +53,5 @@ Open the URL Vite gives you. Place towers on the soil cells, then hit **Start Wa
 - **TypeScript** — Language
 - **Vite** — Dev server and bundler
 - **Vitest** — Testing with v8 coverage
+- **Vercel** — Hosting and serverless functions
+- **Vercel Blob** — Cloud leaderboard storage
