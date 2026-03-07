@@ -210,6 +210,16 @@ export class GameScene extends Phaser.Scene {
     this.waveText = this.add.text(340, uiY, '', textStyle);
     this.scoreText = this.add.text(460, uiY, '', textStyle);
 
+    const scoresBtn = this.add.text(580, uiY, ' Scores ', {
+      fontSize: '14px', color: '#ffff00', fontFamily: 'monospace', backgroundColor: '#886600',
+    }).setInteractive({ useHandCursor: true });
+
+    scoresBtn.on('pointerdown', () => {
+      this.scene.start('LeaderboardScene', {
+        score: 0, initials: '', seed: this.seed, seedLabel: this.seedLabel,
+      });
+    });
+
     const btnY = uiY + 30;
 
     this.ladybugBtn = this.add.text(10, btnY,

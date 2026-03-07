@@ -93,14 +93,27 @@ export class LeaderboardScene extends Phaser.Scene {
       });
     }
 
+    const isViewOnly = this.playerInitials === '';
+
     this.add.text(cx, startY + 10 * rowHeight + 30, 'PRESS ENTER TO PLAY AGAIN', {
       fontSize: '16px',
       color: '#44ff44',
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
+    if (isViewOnly) {
+      this.add.text(cx, startY + 10 * rowHeight + 60, 'PRESS ESC TO RETURN', {
+        fontSize: '16px',
+        color: '#ffff44',
+        fontFamily: 'monospace',
+      }).setOrigin(0.5);
+    }
+
     this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
       if (event.key === 'Enter') {
+        this.scene.start('GameScene');
+      }
+      if (event.key === 'Escape') {
         this.scene.start('GameScene');
       }
     });
