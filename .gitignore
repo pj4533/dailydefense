@@ -3,3 +3,5 @@ dist/
 coverage/
 *.tsbuildinfo
 .vite/
+.DS_Store
+.playwright-mcp/
