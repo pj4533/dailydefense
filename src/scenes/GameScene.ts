@@ -10,6 +10,8 @@ import {
 } from '../config';
 import { generateRandomPath } from '../logic/MapGenerator';
 import { generateWave } from '../logic/WaveGenerator';
+import { mulberry32 } from '../logic/seedRng';
+import { getDailySeed, getDailySeedLabel } from '../logic/dailySeed';
 
 // Map tower types to spritesheet keys and animation config
 const TOWER_SPRITE: Record<string, { key: string; idle: string }> = {
@@ -54,6 +56,8 @@ export class GameScene extends Phaser.Scene {
 
   private gameOverTriggered: boolean = false;
   private gameOverTimer: number = 0;
+  private seed: number = 0;
+  private seedLabel: string = '';
 
   constructor() {
     super({ key: 'GameScene' });
@@ -93,7 +97,10 @@ export class GameScene extends Phaser.Scene {
     this.gameOverTriggered = false;
     this.gameOverTimer = 0;
 
-    const waypoints = generateRandomPath(GRID_COLS, GRID_ROWS);
+    this.seed = getDailySeed();
+    this.seedLabel = getDailySeedLabel();
+    const rng = mulberry32(this.seed);
+    const waypoints = generateRandomPath(GRID_COLS, GRID_ROWS, rng);
     this.engine = new GameEngine(
       GRID_COLS, GRID_ROWS, TILE_SIZE,
       waypoints, generateWave,
@@ -195,10 +202,13 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'monospace',
     };
 
-    this.moneyText = this.add.text(10, uiY, '', textStyle);
-    this.livesText = this.add.text(160, uiY, '', textStyle);
-    this.waveText = this.add.text(300, uiY, '', textStyle);
-    this.scoreText = this.add.text(420, uiY, '', textStyle);
+    this.add.text(10, uiY, this.seedLabel, {
+      fontSize: '14px', color: '#ffff00', fontFamily: 'monospace',
+    });
+    this.moneyText = this.add.text(80, uiY, '', textStyle);
+    this.livesText = this.add.text(200, uiY, '', textStyle);
+    this.waveText = this.add.text(340, uiY, '', textStyle);
+    this.scoreText = this.add.text(460, uiY, '', textStyle);
 
     const btnY = uiY + 30;
 
@@ -348,7 +358,11 @@ export class GameScene extends Phaser.Scene {
     if (this.gameOverTriggered) {
       this.gameOverTimer -= dt;
       if (this.gameOverTimer <= 0) {
-        this.scene.start('GameOverScene', { score: this.engine.state.score });
+        this.scene.start('GameOverScene', {
+          score: this.engine.state.score,
+          seed: this.seed,
+          seedLabel: this.seedLabel,
+        });
       }
       return;
     }

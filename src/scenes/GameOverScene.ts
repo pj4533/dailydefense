@@ -4,6 +4,8 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config';
 
 export class GameOverScene extends Phaser.Scene {
   private score: number = 0;
+  private seed: number = 0;
+  private seedLabel: string = '';
   private initials: string[] = [];
   private slotTexts: Phaser.GameObjects.Text[] = [];
   private leaderboard!: Leaderboard;
@@ -13,8 +15,10 @@ export class GameOverScene extends Phaser.Scene {
     super({ key: 'GameOverScene' });
   }
 
-  init(data: { score: number }): void {
+  init(data: { score: number; seed: number; seedLabel: string }): void {
     this.score = data.score ?? 0;
+    this.seed = data.seed ?? 0;
+    this.seedLabel = data.seedLabel ?? '';
     this.initials = [];
     this.confirmed = false;
   }
@@ -85,10 +89,13 @@ export class GameOverScene extends Phaser.Scene {
       if (this.initials.length === 3) {
         this.confirmed = true;
         const initialsStr = this.initials.join('');
-        this.leaderboard.addEntry(initialsStr, this.score);
-        this.scene.start('LeaderboardScene', {
-          score: this.score,
-          initials: initialsStr,
+        this.leaderboard.addEntry(this.seed, initialsStr, this.score).then(() => {
+          this.scene.start('LeaderboardScene', {
+            score: this.score,
+            initials: initialsStr,
+            seed: this.seed,
+            seedLabel: this.seedLabel,
+          });
         });
       }
       return;

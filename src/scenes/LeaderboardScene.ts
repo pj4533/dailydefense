@@ -5,6 +5,8 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../config';
 export class LeaderboardScene extends Phaser.Scene {
   private playerScore: number = 0;
   private playerInitials: string = '';
+  private seed: number = 0;
+  private seedLabel: string = '';
   private blinkTimer: number = 0;
   private blinkVisible: boolean = true;
   private highlightTexts: Phaser.GameObjects.Text[] = [];
@@ -13,25 +15,36 @@ export class LeaderboardScene extends Phaser.Scene {
     super({ key: 'LeaderboardScene' });
   }
 
-  init(data: { score: number; initials: string }): void {
+  init(data: { score: number; initials: string; seed: number; seedLabel: string }): void {
     this.playerScore = data.score ?? 0;
     this.playerInitials = data.initials ?? '';
+    this.seed = data.seed ?? 0;
+    this.seedLabel = data.seedLabel ?? '';
     this.highlightTexts = [];
   }
 
   create(): void {
-    const leaderboard = new Leaderboard();
-    const entries = leaderboard.getEntries();
     this.cameras.main.setBackgroundColor('#000000');
-
     const cx = CANVAS_WIDTH / 2;
 
-    this.add.text(cx, 40, 'HIGH SCORES', {
+    this.add.text(cx, 40, `HIGH SCORES - ${this.seedLabel}`, {
       fontSize: '36px',
       color: '#ffff00',
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
+    const loadingText = this.add.text(cx, 250, 'LOADING...', {
+      fontSize: '18px', color: '#888888', fontFamily: 'monospace',
+    }).setOrigin(0.5);
+
+    const leaderboard = new Leaderboard();
+    leaderboard.getEntries(this.seed).then(entries => {
+      loadingText.destroy();
+      this.renderEntries(entries, cx);
+    });
+  }
+
+  private renderEntries(entries: LeaderboardEntry[], cx: number): void {
     const startY = 100;
     const rowHeight = 32;
 
