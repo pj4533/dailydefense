@@ -38,6 +38,7 @@ export const ENEMY_CONFIGS = {
   beetle: { health: 150, speed: 50, reward: 25, color: 0x336633 } as EnemyConfig,
 };
 
+// Fallback path used when random generation fails (see MapGenerator.ts)
 export const PATH_WAYPOINTS: GridPosition[] = [
   { col: 0, row: 2 },
   { col: 5, row: 2 },

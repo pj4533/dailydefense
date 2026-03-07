@@ -6,8 +6,9 @@ import { TowerType, CellType } from '../types';
 import {
   TILE_SIZE, GRID_COLS, GRID_ROWS, GAME_HEIGHT,
   STARTING_MONEY, STARTING_LIVES,
-  PATH_WAYPOINTS, WAVES, TOWER_CONFIGS,
+  WAVES, TOWER_CONFIGS,
 } from '../config';
+import { generateRandomPath } from '../logic/MapGenerator';
 
 // Map tower types to spritesheet keys and animation config
 const TOWER_SPRITE: Record<string, { key: string; idle: string }> = {
@@ -77,9 +78,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    const waypoints = generateRandomPath(GRID_COLS, GRID_ROWS);
     this.engine = new GameEngine(
       GRID_COLS, GRID_ROWS, TILE_SIZE,
-      PATH_WAYPOINTS, WAVES,
+      waypoints, WAVES,
       STARTING_MONEY, STARTING_LIVES,
     );
 
