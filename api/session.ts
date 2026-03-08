@@ -9,9 +9,9 @@ const redis = new Redis({
 
 function isValidSeed(seed: number): boolean {
   const now = new Date();
-  const today = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+  const today = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
   const yesterday = new Date(now.getTime() - 86400000);
-  const yesterdaySeed = yesterday.getFullYear() * 10000 + (yesterday.getMonth() + 1) * 100 + yesterday.getDate();
+  const yesterdaySeed = yesterday.getUTCFullYear() * 10000 + (yesterday.getUTCMonth() + 1) * 100 + yesterday.getUTCDate();
   return seed === today || seed === yesterdaySeed;
 }
 

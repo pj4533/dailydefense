@@ -15,7 +15,7 @@ const redis = new Redis({
 
 function getDailySeed(): number {
   const now = new Date();
-  return now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+  return now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
 }
 
 export default async function handler(req: Request): Promise<Response> {
