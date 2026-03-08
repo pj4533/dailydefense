@@ -20,10 +20,8 @@
       padding: 0;
       background: #0a0a0a;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
       overflow: hidden;
       touch-action: none;
       overscroll-behavior: none;
@@ -67,6 +65,10 @@
       z-index: 10;
     }
 
+    #game-container {
+      /* Sized by JavaScript for accurate viewport dimensions */
+    }
+
     .sr-only {
       position: absolute;
       width: 1px;
@@ -102,7 +104,7 @@
       #agent-link { display: none; }
     }
 
-    /* Rotation prompt for narrow portrait viewports */
+    /* Rotation prompt for portrait viewports */
     #rotate-prompt {
       display: none;
       position: fixed;
@@ -136,9 +138,27 @@
       75% { transform: rotate(0deg); }
     }
 
+    /* Touch devices: clean fullscreen look */
+    @media (hover: none) {
+      #game-wrapper {
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      #game-wrapper::after {
+        display: none;
+      }
+      #agent-link { display: none; }
+    }
+
+    /* Touch devices in portrait: show rotate prompt */
+    @media (hover: none) and (orientation: portrait) {
+      #rotate-prompt { display: flex; }
+    }
+
+    /* Fallback: phones in portrait by screen width */
     @media (max-width: 600px) and (orientation: portrait) {
       #rotate-prompt { display: flex; }
-      #game-wrapper { display: none; }
     }
 
     /* Fullscreen toggle button — touch devices only */
@@ -159,7 +179,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    @media (max-width: 1024px) and (hover: none) {
+    @media (hover: none) {
       #fullscreen-btn { display: block; }
     }
   </style>
@@ -180,6 +200,25 @@
   <a id="agent-link" href="/skill.md">have your agent play: skill.md</a>
   <script type="module" src="/src/main.ts"></script>
   <script>
+    // Size game container to actual visible viewport (fixes iOS Safari mismatch)
+    (function() {
+      function sizeContainer() {
+        var c = document.getElementById('game-container');
+        if (!c) return;
+        var vp = window.visualViewport;
+        var w = vp ? vp.width : window.innerWidth;
+        var h = vp ? vp.height : window.innerHeight;
+        c.style.width = w + 'px';
+        c.style.height = h + 'px';
+      }
+      sizeContainer();
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', sizeContainer);
+      }
+      window.addEventListener('resize', sizeContainer);
+    })();
+
+    // Fullscreen toggle
     (function() {
       var btn = document.getElementById('fullscreen-btn');
       if (!btn) return;

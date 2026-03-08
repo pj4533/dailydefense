@@ -11,7 +11,7 @@ export interface LayoutConfig {
 function detectMobile(): boolean {
   if (typeof window === 'undefined') return false;
   return ('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
-    Math.max(window.innerWidth, window.innerHeight) < 1024;
+    Math.max(window.innerWidth, window.innerHeight) < 1400;
 }
 
 function computeLayout(): LayoutConfig {

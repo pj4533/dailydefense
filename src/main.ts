@@ -13,6 +13,7 @@ function startGame(): void {
     pixelArt: true,
     roundPixels: true,
     scene: [GameScene, GameOverScene, LeaderboardScene],
+    parent: 'game-container',
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
