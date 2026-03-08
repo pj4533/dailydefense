@@ -9,7 +9,7 @@ Daily Defense is a browser-based tower defense game where every player (human or
 ## Game Concept
 
 - Enemies (garden pests: aphids, ants, beetles) walk along a path from left to right
-- You place towers (beneficial predators: ladybugs, mantises) adjacent to the path
+- You place towers (beneficial predators: ladybugs, spiders, mantises) adjacent to the path
 - Towers automatically fire at enemies in range
 - Enemies that reach the end cost you a life (you start with 5)
 - Survive as many waves as possible to maximize your score
@@ -68,7 +68,7 @@ Start a new game session.
     "gridCols": 16,
     "gridRows": 10,
     "tileSize": 48,
-    "towers": { "ladybug": {...}, "mantis": {...} },
+    "towers": { "ladybug": {...}, "spider": {...}, "mantis": {...} },
     "enemies": { "aphid": {...}, "ant": {...}, "beetle": {...} }
   }
 }
@@ -146,10 +146,11 @@ When game ends (lives hit 0):
 
 ## Tower Stats
 
-| Tower | Cost | Damage | Range | Fire Rate | Best Against |
-|-------|------|--------|-------|-----------|-------------|
-| Ladybug | 25 | 10 | 2.5 tiles | 2/sec | Groups of weak enemies |
-| Mantis | 50 | 40 | 4 tiles | 0.5/sec | Strong single targets |
+| Tower | Cost | Damage | Range | Fire Rate | Special | Best Against |
+|-------|------|--------|-------|-----------|---------|-------------|
+| Ladybug | 25 | 15 | 2.5 tiles | 2/sec | — | Groups of weak enemies (highest DPS) |
+| Spider | 30 | 5 | 3 tiles | 1/sec | Slows 50% for 2s | Fast enemies, support for other towers |
+| Mantis | 50 | 40 | 4 tiles | 0.5/sec | — | Strong single targets (longest range) |
 
 ## Enemy Stats (Wave 0 base, scales with wave number)
 
@@ -166,12 +167,14 @@ When game ends (lives hit 0):
 
 ## Strategy Tips
 
-1. **Ladybugs are cost-efficient early** — place them where the path doubles back for maximum coverage
-2. **Mantises shine against beetles** (wave 3+) — their high damage per hit handles tanky enemies
-3. **Path bends are premium real estate** — towers placed at corners can hit enemies on two segments
-4. **Don't hoard money** — unspent gold earns nothing. More towers = more kills = more income
-5. **Selling is free** — 100% refund means you can reposition without penalty
-6. **Wave clear bonus scales** — clearing wave N gives `(N+1) * 100` bonus score points
+1. **Ladybugs are cost-efficient early** — highest DPS (30) at lowest cost, place where the path doubles back for maximum coverage
+2. **Spiders are force multipliers** — 50% slow doubles time enemies spend in nearby towers' range, effectively doubling their DPS. Place spiders near clusters of DPS towers
+3. **Mantises shine against beetles** (wave 3+) — their high damage per hit and long range handles tanky enemies
+4. **Spider + Ladybug combo** — slowed enemies stay in ladybug's short range much longer, making this pairing very effective
+5. **Path bends are premium real estate** — towers placed at corners can hit enemies on two segments
+6. **Don't hoard money** — unspent gold earns nothing. More towers = more kills = more income
+7. **Selling is free** — 100% refund means you can reposition without penalty
+8. **Wave clear bonus scales** — clearing wave N gives `(N+1) * 100` bonus score points
 
 ## Game Sessions
 

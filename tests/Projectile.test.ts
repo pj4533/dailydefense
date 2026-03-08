@@ -73,6 +73,32 @@ describe('Projectile', () => {
       expect(proj.y).toBeGreaterThan(0);
     });
 
+    it('applies slow to target on hit', () => {
+      const enemy = new Enemy(enemyConfig, 100, 0);
+      const proj = new Projectile(0, 0, enemy, 10, 0.5, 2.0);
+      proj.update(0.5); // hits enemy
+      expect(proj.alive).toBe(false);
+      expect(enemy.slowFactor).toBe(0.5);
+      expect(enemy.slowTimer).toBe(2.0);
+    });
+
+    it('does not apply slow if target dies from damage', () => {
+      const weakConfig: EnemyConfig = { health: 5, speed: 100, reward: 10, color: 0xff0000 };
+      const enemy = new Enemy(weakConfig, 100, 0);
+      const proj = new Projectile(0, 0, enemy, 10, 0.5, 2.0);
+      proj.update(0.5);
+      expect(enemy.alive).toBe(false);
+      expect(enemy.slowFactor).toBe(1); // slow not applied to dead enemy
+    });
+
+    it('does not apply slow when projectile has no slow fields', () => {
+      const enemy = new Enemy(enemyConfig, 100, 0);
+      const proj = new Projectile(0, 0, enemy, 10);
+      proj.update(0.5);
+      expect(enemy.slowFactor).toBe(1);
+      expect(enemy.slowTimer).toBe(0);
+    });
+
     it('moves diagonally toward target', () => {
       const enemy = new Enemy(enemyConfig, 100, 100);
       const proj = new Projectile(0, 0, enemy, 10);

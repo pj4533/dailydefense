@@ -72,6 +72,43 @@ describe('Enemy', () => {
     });
   });
 
+  describe('applySlow', () => {
+    it('reduces movement speed', () => {
+      const enemy = new Enemy(basicConfig, 0, 0);
+      enemy.applySlow(0.5, 2.0);
+      enemy.update(0.5, simplePath); // 100 speed * 0.5 slow * 0.5 dt = 25 pixels
+      expect(enemy.x).toBeCloseTo(25);
+    });
+
+    it('wears off after duration expires', () => {
+      const enemy = new Enemy(basicConfig, 0, 0);
+      enemy.applySlow(0.5, 0.5);
+      enemy.update(0.3, simplePath); // still slowed: moves 100*0.5*0.3 = 15
+      expect(enemy.slowFactor).toBe(0.5);
+      expect(enemy.x).toBeCloseTo(15);
+      enemy.update(0.3, simplePath); // timer was 0.2, now expires → moves at full speed
+      expect(enemy.slowFactor).toBe(1);
+      expect(enemy.slowTimer).toBe(0);
+    });
+
+    it('refreshes duration on subsequent hits (does not stack)', () => {
+      const enemy = new Enemy(basicConfig, 0, 0);
+      enemy.applySlow(0.5, 2.0);
+      enemy.update(1.0, simplePath); // 1s passes, timer now ~1.0
+      enemy.applySlow(0.5, 2.0); // refresh
+      expect(enemy.slowTimer).toBe(2.0); // reset to full duration
+      expect(enemy.slowFactor).toBe(0.5); // same factor
+    });
+
+    it('decrements slow timer each update', () => {
+      const enemy = new Enemy(basicConfig, 0, 0);
+      enemy.applySlow(0.5, 2.0);
+      enemy.update(0.5, simplePath);
+      expect(enemy.slowTimer).toBeCloseTo(1.5);
+      expect(enemy.slowFactor).toBe(0.5);
+    });
+  });
+
   describe('takeDamage', () => {
     it('reduces health', () => {
       const enemy = new Enemy(basicConfig, 0, 0);

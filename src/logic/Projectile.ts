@@ -7,12 +7,16 @@ export class Projectile {
   damage: number;
   alive: boolean = true;
   target: Enemy;
+  slowAmount?: number;
+  slowDuration?: number;
 
-  constructor(x: number, y: number, target: Enemy, damage: number) {
+  constructor(x: number, y: number, target: Enemy, damage: number, slowAmount?: number, slowDuration?: number) {
     this.x = x;
     this.y = y;
     this.target = target;
     this.damage = damage;
+    this.slowAmount = slowAmount;
+    this.slowDuration = slowDuration;
   }
 
   update(dt: number): void {
@@ -27,6 +31,9 @@ export class Projectile {
       this.alive = false;
       if (this.target.alive) {
         this.target.takeDamage(this.damage);
+        if (this.target.alive && this.slowAmount != null && this.slowDuration != null) {
+          this.target.applySlow(this.slowAmount, this.slowDuration);
+        }
       }
     } else {
       this.x += (dx / dist) * moveAmount;

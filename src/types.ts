@@ -17,6 +17,7 @@ export enum CellType {
 export enum TowerType {
   LADYBUG = 'ladybug',
   MANTIS = 'mantis',
+  SPIDER = 'spider',
 }
 
 export interface TowerConfig {
@@ -26,6 +27,8 @@ export interface TowerConfig {
   range: number;
   fireRate: number;
   color: number;
+  slowAmount?: number;
+  slowDuration?: number;
 }
 
 export interface EnemyConfig {

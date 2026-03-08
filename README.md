@@ -25,7 +25,7 @@ Open the URL Vite gives you. Place towers on the soil cells, then hit **Start Wa
 
 ## How to Play
 
-- **Select a tower** at the bottom (Ladybug or Mantis)
+- **Select a tower** at the bottom (Ladybug, Mantis, or Spider)
 - **Click empty cells** to place towers (costs money)
 - **Drag towers** to reposition them
 - **Click a tower** to select it, then **Sell** to get your money back
@@ -36,7 +36,8 @@ Open the URL Vite gives you. Place towers on the soil cells, then hit **Start Wa
 
 | Tower | Cost | Damage | Fire Rate | Range | Predator |
 |-------|------|--------|-----------|-------|----------|
-| Ladybug Tree | $25 | 10 | Fast | Short | Ladybugs — classic aphid hunters |
+| Ladybug Tree | $25 | 15 | Fast | Short | Ladybugs — high DPS aphid hunters |
+| Spider Tree | $30 | 5 | Medium | Medium | Spiders — slow enemies by 50% for 2s |
 | Mantis Tree | $50 | 40 | Slow | Long | Praying mantises — apex garden predators |
 
 ## Scripts

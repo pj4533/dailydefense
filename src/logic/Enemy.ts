@@ -11,6 +11,8 @@ export class Enemy {
   currentWaypointIndex: number = 1;
   alive: boolean = true;
   reachedEnd: boolean = false;
+  slowFactor: number = 1;
+  slowTimer: number = 0;
 
   constructor(config: EnemyConfig, startX: number, startY: number) {
     this.x = startX;
@@ -22,14 +24,27 @@ export class Enemy {
     this.color = config.color;
   }
 
+  applySlow(factor: number, duration: number): void {
+    this.slowFactor = factor;
+    this.slowTimer = duration;
+  }
+
   update(dt: number, path: Point[]): void {
     if (!this.alive || this.reachedEnd) return;
+
+    if (this.slowTimer > 0) {
+      this.slowTimer -= dt;
+      if (this.slowTimer <= 0) {
+        this.slowTimer = 0;
+        this.slowFactor = 1;
+      }
+    }
 
     const target = path[this.currentWaypointIndex];
     const dx = target.x - this.x;
     const dy = target.y - this.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const moveAmount = this.speed * dt;
+    const moveAmount = this.speed * this.slowFactor * dt;
 
     if (moveAmount >= dist) {
       this.x = target.x;

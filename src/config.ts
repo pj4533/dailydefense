@@ -21,7 +21,7 @@ export const TOWER_CONFIGS: Record<TowerType, TowerConfig> = {
   [TowerType.LADYBUG]: {
     type: TowerType.LADYBUG,
     cost: 25,
-    damage: 10,
+    damage: 15,
     range: 2.5,
     fireRate: 2,
     color: 0xcc4444,
@@ -33,6 +33,16 @@ export const TOWER_CONFIGS: Record<TowerType, TowerConfig> = {
     range: 4,
     fireRate: 0.5,
     color: 0x44aa44,
+  },
+  [TowerType.SPIDER]: {
+    type: TowerType.SPIDER,
+    cost: 30,
+    damage: 5,
+    range: 3,
+    fireRate: 1,
+    color: 0x8844cc,
+    slowAmount: 0.5,
+    slowDuration: 2.0,
   },
 };
 

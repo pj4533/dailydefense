@@ -63,7 +63,8 @@ export class GameEngine {
     for (const tower of this.towers) {
       const target = tower.update(dt, aliveEnemies);
       if (target) {
-        this.projectiles.push(new Projectile(tower.x, tower.y, target, tower.damage));
+        const cfg = TOWER_CONFIGS[tower.type];
+        this.projectiles.push(new Projectile(tower.x, tower.y, target, tower.damage, cfg.slowAmount, cfg.slowDuration));
       }
     }
 

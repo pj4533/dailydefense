@@ -25,7 +25,7 @@ Browser-based garden defense game using **Phaser 3** + **TypeScript**, bundled w
 
 ### Theme
 
-Towers are **trees that house beneficial predators** (ladybugs, mantises). Each tower type sends out a specific natural predator as its projectile. Enemies are common **garden pests** (aphids, ants, beetles). Future tower types can include birds, frogs, and other beneficial garden creatures.
+Towers are **trees that house beneficial predators** (ladybugs, mantises, spiders). Each tower type sends out a specific natural predator as its projectile. Enemies are common **garden pests** (aphids, ants, beetles). Tower types are designed around distinct roles: Ladybug is cheap high-DPS, Spider is crowd-control/support (slows enemies), and Mantis is expensive long-range coverage. Future tower types can include birds, frogs, and other beneficial garden creatures.
 
 ### Logic/Rendering Separation
 
@@ -93,6 +93,10 @@ The agent API flow (`/api/game/*`) is unaffected — it uses full server-side si
 - **GameScene** — Main gameplay: tower placement/dragging, enemy rendering, HUD, wave control
 - **GameOverScene** — Arcade-style 3-letter initials entry, submits score to cloud leaderboard
 - **LeaderboardScene** — Retro top-10 display with blinking highlight for current player
+
+### Agent Skill File
+
+**`public/skill.md`** is served at `dailydefense.ai/skill.md` and describes how AI agents play the game via the API. It documents the agent API endpoints, tower/enemy stats, and strategy tips. **Must be updated whenever tower stats, enemy stats, or game mechanics change.**
 
 ### Configuration
 

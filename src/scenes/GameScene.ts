@@ -20,6 +20,7 @@ import { ActionRecorder } from '../logic/ActionRecorder';
 const TOWER_SPRITE: Record<string, { key: string; idle: string }> = {
   [TowerType.LADYBUG]: { key: 'ladybug', idle: 'ladybug_idle' },
   [TowerType.MANTIS]: { key: 'dragonfly', idle: 'dragonfly_idle' },
+  [TowerType.SPIDER]: { key: 'spider', idle: 'spider_idle' },
 };
 
 // Map enemy colors to spritesheet keys and animation config
@@ -56,6 +57,7 @@ export class GameScene extends Phaser.Scene {
 
   private ladybugBtn!: ArcadeBtn;
   private mantisBtn!: ArcadeBtn;
+  private spiderBtn!: ArcadeBtn;
   private sellBtn!: ArcadeBtn;
   private startWaveBtn!: ArcadeBtn;
 
@@ -96,6 +98,7 @@ export class GameScene extends Phaser.Scene {
 
     this.load.spritesheet('ladybug', 'assets/sprites/ladybug.png', { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet('dragonfly', 'assets/sprites/dragonfly.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('spider', 'assets/sprites/spider.png', { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet('larva', 'assets/sprites/larva.png', { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet('scarab', 'assets/sprites/scarab.png', { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet('rhino_beetle', 'assets/sprites/rhino_beetle.png', { frameWidth: 32, frameHeight: 32 });
@@ -202,6 +205,7 @@ export class GameScene extends Phaser.Scene {
   private createAnimations(): void {
     this.anims.create({ key: 'ladybug_idle', frames: this.anims.generateFrameNumbers('ladybug', { start: 0, end: 7 }), frameRate: 8, repeat: -1 });
     this.anims.create({ key: 'dragonfly_idle', frames: this.anims.generateFrameNumbers('dragonfly', { start: 0, end: 3 }), frameRate: 8, repeat: -1 });
+    this.anims.create({ key: 'spider_idle', frames: this.anims.generateFrameNumbers('spider', { frames: [0, 2, 4] }), frameRate: 8, repeat: -1 });
     this.anims.create({ key: 'larva_move', frames: this.anims.generateFrameNumbers('larva', { start: 6, end: 11 }), frameRate: 10, repeat: -1 });
     this.anims.create({ key: 'scarab_move', frames: this.anims.generateFrameNumbers('scarab', { start: 5, end: 9 }), frameRate: 10, repeat: -1 });
     this.anims.create({ key: 'rhino_move', frames: this.anims.generateFrameNumbers('rhino_beetle', { start: 8, end: 15 }), frameRate: 8, repeat: -1 });
@@ -286,7 +290,7 @@ export class GameScene extends Phaser.Scene {
       : GAME_HEIGHT + 24;
     const gap = 6;
     const totalWidth = cw - 12; // 6px margins each side
-    const btnW = Math.floor((totalWidth - 4 * gap) / 5);
+    const btnW = Math.floor((totalWidth - 5 * gap) / 6);
     const fontSize = isMobile ? '10px' : '9px';
 
     let x = 6;
@@ -309,6 +313,16 @@ export class GameScene extends Phaser.Scene {
         this.updateSellButton();
       });
     this.addBtnHover(this.mantisBtn, () => this.updateButtonHighlights());
+    x += btnW + gap;
+
+    this.spiderBtn = this.makeArcadeBtn(x, btnY, btnW, btnHeight,
+      `SPIDER $${TOWER_CONFIGS[TowerType.SPIDER].cost}`, 0xaa66ff, fontSize, () => {
+        this.selectedTowerType = TowerType.SPIDER;
+        this.selectedTower = null;
+        this.updateButtonHighlights();
+        this.updateSellButton();
+      });
+    this.addBtnHover(this.spiderBtn, () => this.updateButtonHighlights());
     x += btnW + gap;
 
     this.startWaveBtn = this.makeArcadeBtn(x, btnY, btnW, btnHeight,
@@ -455,15 +469,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateButtonHighlights(): void {
-    const isLadybug = this.selectedTowerType === TowerType.LADYBUG;
+    const sel = this.selectedTowerType;
 
     this.drawBtnGfx(this.ladybugBtn.g, this.ladybugBtn.x, this.ladybugBtn.y,
-      this.ladybugBtn.w, this.ladybugBtn.h, 0xff4444, isLadybug);
-    this.ladybugBtn.label.setColor(isLadybug ? '#ffffff' : '#cc4444');
+      this.ladybugBtn.w, this.ladybugBtn.h, 0xff4444, sel === TowerType.LADYBUG);
+    this.ladybugBtn.label.setColor(sel === TowerType.LADYBUG ? '#ffffff' : '#cc4444');
 
     this.drawBtnGfx(this.mantisBtn.g, this.mantisBtn.x, this.mantisBtn.y,
-      this.mantisBtn.w, this.mantisBtn.h, 0x44ff44, !isLadybug);
-    this.mantisBtn.label.setColor(!isLadybug ? '#ffffff' : '#44cc44');
+      this.mantisBtn.w, this.mantisBtn.h, 0x44ff44, sel === TowerType.MANTIS);
+    this.mantisBtn.label.setColor(sel === TowerType.MANTIS ? '#ffffff' : '#44cc44');
+
+    this.drawBtnGfx(this.spiderBtn.g, this.spiderBtn.x, this.spiderBtn.y,
+      this.spiderBtn.w, this.spiderBtn.h, 0xaa66ff, sel === TowerType.SPIDER);
+    this.spiderBtn.label.setColor(sel === TowerType.SPIDER ? '#ffffff' : '#8844cc');
   }
 
   private updateSellButton(): void {
@@ -686,6 +704,11 @@ export class GameScene extends Phaser.Scene {
         this.enemySprites.set(enemy, sprite);
       }
       sprite.setPosition(enemy.x, enemy.y);
+      if (enemy.slowTimer > 0) {
+        sprite.setTint(0x8888ff);
+      } else {
+        sprite.clearTint();
+      }
       const path = this.engine.map.getPathWorldPositions();
       if (enemy.currentWaypointIndex < path.length) {
         const dx = path[enemy.currentWaypointIndex].x - enemy.x;
@@ -739,7 +762,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     for (const proj of this.engine.projectiles) {
-      this.overlayGraphics.fillStyle(0xffff00);
+      this.overlayGraphics.fillStyle(proj.slowAmount != null ? 0xaa66ff : 0xffff00);
       this.overlayGraphics.fillCircle(proj.x, proj.y, 3);
     }
   }
