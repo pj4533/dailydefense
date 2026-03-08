@@ -9,6 +9,8 @@ new Phaser.Game({
   width: CANVAS_WIDTH,
   height: CANVAS_HEIGHT,
   backgroundColor: '#2d1b0e',
+  pixelArt: true,
+  roundPixels: true,
   scene: [GameScene, GameOverScene, LeaderboardScene],
   scale: {
     mode: Phaser.Scale.FIT,

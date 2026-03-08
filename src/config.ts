@@ -5,7 +5,7 @@ export const GRID_COLS = 16;
 export const GRID_ROWS = 10;
 export const GAME_WIDTH = TILE_SIZE * GRID_COLS;
 export const GAME_HEIGHT = TILE_SIZE * GRID_ROWS;
-export const UI_HEIGHT = 80;
+export const UI_HEIGHT = 96;
 export const CANVAS_WIDTH = GAME_WIDTH;
 export const CANVAS_HEIGHT = GAME_HEIGHT + UI_HEIGHT;
 
