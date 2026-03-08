@@ -254,8 +254,9 @@ export class GameScene extends Phaser.Scene {
     this.sellBtn.zone.removeInteractive();
 
     const scoresBtn = this.makeArcadeBtn(cw - 6 - 130, btnY, 130, btnH, 'SCORES', 0xffff00, () => {
-      this.scene.start('LeaderboardScene', {
-        score: 0, initials: '', seed: this.seed, seedLabel: this.seedLabel,
+      this.scene.sleep();
+      this.scene.launch('LeaderboardScene', {
+        score: 0, initials: '', seed: this.seed, seedLabel: this.seedLabel, fromGame: true,
       });
     });
     this.addBtnHover(scoresBtn);

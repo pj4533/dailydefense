@@ -9,6 +9,7 @@ export class LeaderboardScene extends Phaser.Scene {
   private playerInitials: string = '';
   private seed: number = 0;
   private seedLabel: string = '';
+  private fromGame: boolean = false;
   private blinkTimer: number = 0;
   private blinkVisible: boolean = true;
   private highlightTexts: Phaser.GameObjects.Text[] = [];
@@ -17,11 +18,12 @@ export class LeaderboardScene extends Phaser.Scene {
     super({ key: 'LeaderboardScene' });
   }
 
-  init(data: { score: number; initials: string; seed: number; seedLabel: string }): void {
+  init(data: { score: number; initials: string; seed: number; seedLabel: string; fromGame?: boolean }): void {
     this.playerScore = data.score ?? 0;
     this.playerInitials = data.initials ?? '';
     this.seed = data.seed ?? 0;
     this.seedLabel = data.seedLabel ?? '';
+    this.fromGame = data.fromGame ?? false;
     this.highlightTexts = [];
   }
 
@@ -142,7 +144,14 @@ export class LeaderboardScene extends Phaser.Scene {
     const isViewOnly = this.playerInitials === '';
     const btnY = startY + 10 * rowHeight + 30;
 
-    if (isViewOnly) {
+    const resumeGame = () => {
+      this.scene.stop();
+      this.scene.wake('GameScene');
+    };
+
+    if (this.fromGame) {
+      this.createNavButton(cx, btnY, 160, 44, 'BACK', 0xffff00, resumeGame);
+    } else if (isViewOnly) {
       this.createNavButton(cx - 80, btnY, 230, 44, 'PLAY AGAIN', 0x00ff66, () => this.scene.start('GameScene'));
       this.createNavButton(cx + 140, btnY, 120, 44, 'BACK', 0xffff00, () => this.scene.start('GameScene'));
     } else {
@@ -150,7 +159,11 @@ export class LeaderboardScene extends Phaser.Scene {
     }
 
     this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Enter' || event.key === 'Escape') this.scene.start('GameScene');
+      if (this.fromGame) {
+        if (event.key === 'Enter' || event.key === 'Escape') resumeGame();
+      } else {
+        if (event.key === 'Enter' || event.key === 'Escape') this.scene.start('GameScene');
+      }
     });
   }
 
