@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Leaderboard, LeaderboardEntry } from '../logic/Leaderboard';
-import { CANVAS_WIDTH } from '../config';
+import { layout } from '../layout';
 
 const ARCADE_FONT = '"Press Start 2P", monospace';
 
@@ -29,25 +29,27 @@ export class LeaderboardScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor('#06060f');
-    const cx = CANVAS_WIDTH / 2;
+    const { canvasWidth, canvasHeight, isMobile } = layout;
+    const cx = canvasWidth / 2;
+    const frameH = canvasHeight - 31;
 
     // Decorative double frame
     const frame = this.add.graphics();
     frame.fillStyle(0x004444);
-    this.solidBorder(frame, 20, 15, CANVAS_WIDTH - 40, 545, 2);
+    this.solidBorder(frame, 20, 15, canvasWidth - 40, frameH, 2);
     frame.fillStyle(0x220022);
-    this.solidBorder(frame, 24, 19, CANVAS_WIDTH - 48, 537, 1);
+    this.solidBorder(frame, 24, 19, canvasWidth - 48, frameH - 8, 1);
 
     // Corner accents
     frame.fillStyle(0xaaaa00);
     frame.fillRect(22, 17, 14, 1);
     frame.fillRect(22, 17, 1, 10);
-    frame.fillRect(CANVAS_WIDTH - 36, 17, 14, 1);
-    frame.fillRect(CANVAS_WIDTH - 23, 17, 1, 10);
-    frame.fillRect(22, 558, 14, 1);
-    frame.fillRect(22, 549, 1, 10);
-    frame.fillRect(CANVAS_WIDTH - 36, 558, 14, 1);
-    frame.fillRect(CANVAS_WIDTH - 23, 549, 1, 10);
+    frame.fillRect(canvasWidth - 36, 17, 14, 1);
+    frame.fillRect(canvasWidth - 23, 17, 1, 10);
+    frame.fillRect(22, frameH + 12, 14, 1);
+    frame.fillRect(22, frameH + 3, 1, 10);
+    frame.fillRect(canvasWidth - 36, frameH + 12, 14, 1);
+    frame.fillRect(canvasWidth - 23, frameH + 3, 1, 10);
 
     // Site title
     this.add.text(cx, 32, 'DAILY DEFENSE', {
@@ -85,8 +87,10 @@ export class LeaderboardScene extends Phaser.Scene {
   }
 
   private renderEntries(entries: LeaderboardEntry[], cx: number): void {
-    const startY = 110;
-    const rowHeight = 30;
+    const { canvasWidth, isMobile } = layout;
+    const startY = isMobile ? 100 : 110;
+    const rowHeight = isMobile ? 32 : 30;
+    const entryFontSize = isMobile ? '13px' : '12px';
 
     // Header
     this.add.text(cx - 180, startY - 25, 'RANK', { fontSize: '8px', color: '#555555', fontFamily: ARCADE_FONT });
@@ -96,7 +100,7 @@ export class LeaderboardScene extends Phaser.Scene {
     // Header separator
     const sep = this.add.graphics();
     sep.fillStyle(0x006666);
-    sep.fillRect(50, startY - 12, CANVAS_WIDTH - 100, 1);
+    sep.fillRect(50, startY - 12, canvasWidth - 100, 1);
 
     const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32'];
     const rankColorsHex = [0xffd700, 0xc0c0c0, 0xcd7f32];
@@ -112,18 +116,18 @@ export class LeaderboardScene extends Phaser.Scene {
         const dimMedal = ((((mc >> 16) & 0xff) >> 2) << 16) | ((((mc >> 8) & 0xff) >> 2) << 8) | (((mc) & 0xff) >> 2);
         const medalG = this.add.graphics();
         medalG.fillStyle(dimMedal);
-        medalG.fillRect(44, y - 2, CANVAS_WIDTH - 88, rowHeight - 4);
+        medalG.fillRect(44, y - 2, canvasWidth - 88, rowHeight - 4);
       }
 
       const rankColor = i < 3 ? rankColors[i] : '#ffff00';
       const nameColor = isPlayer ? '#ff00ff' : '#00ffff';
       const scoreColor = i < 3 ? rankColors[i] : '#ffffff';
 
-      const rankText = this.add.text(cx - 170, y, `${i + 1}.`, { fontSize: '12px', color: rankColor, fontFamily: ARCADE_FONT });
+      const rankText = this.add.text(cx - 170, y, `${i + 1}.`, { fontSize: entryFontSize, color: rankColor, fontFamily: ARCADE_FONT });
       const displayName = entry.isAgent ? `${entry.initials} 🤖` : entry.initials;
       const nameColor2 = entry.isAgent ? '#88ff88' : nameColor;
-      const nameText = this.add.text(cx - 40, y, displayName, { fontSize: '12px', color: nameColor2, fontFamily: ARCADE_FONT });
-      const entryScoreText = this.add.text(cx + 100, y, `${entry.score}`, { fontSize: '12px', color: scoreColor, fontFamily: ARCADE_FONT });
+      const nameText = this.add.text(cx - 40, y, displayName, { fontSize: entryFontSize, color: nameColor2, fontFamily: ARCADE_FONT });
+      const entryScoreText = this.add.text(cx + 100, y, `${entry.score}`, { fontSize: entryFontSize, color: scoreColor, fontFamily: ARCADE_FONT });
 
       if (isPlayer) {
         this.highlightTexts.push(rankText, nameText, entryScoreText);
@@ -132,24 +136,25 @@ export class LeaderboardScene extends Phaser.Scene {
       // Row separator
       if (i < 9) {
         sep.fillStyle(0x181828);
-        sep.fillRect(50, y + rowHeight - 5, CANVAS_WIDTH - 100, 1);
+        sep.fillRect(50, y + rowHeight - 5, canvasWidth - 100, 1);
       }
     }
 
     // Empty rows
     for (let i = entries.length; i < 10; i++) {
       const y = startY + i * rowHeight;
-      this.add.text(cx - 170, y, `${i + 1}.`, { fontSize: '12px', color: '#1a1a2a', fontFamily: ARCADE_FONT });
-      this.add.text(cx - 40, y, '---', { fontSize: '12px', color: '#1a1a2a', fontFamily: ARCADE_FONT });
-      this.add.text(cx + 100, y, '0', { fontSize: '12px', color: '#1a1a2a', fontFamily: ARCADE_FONT });
+      this.add.text(cx - 170, y, `${i + 1}.`, { fontSize: entryFontSize, color: '#1a1a2a', fontFamily: ARCADE_FONT });
+      this.add.text(cx - 40, y, '---', { fontSize: entryFontSize, color: '#1a1a2a', fontFamily: ARCADE_FONT });
+      this.add.text(cx + 100, y, '0', { fontSize: entryFontSize, color: '#1a1a2a', fontFamily: ARCADE_FONT });
       if (i < 9) {
         sep.fillStyle(0x181828);
-        sep.fillRect(50, y + rowHeight - 5, CANVAS_WIDTH - 100, 1);
+        sep.fillRect(50, y + rowHeight - 5, canvasWidth - 100, 1);
       }
     }
 
     // Nav buttons
     const isViewOnly = this.playerInitials === '';
+    const navBtnH = isMobile ? 52 : 44;
     const btnY = startY + 10 * rowHeight + 30;
 
     const resumeGame = () => {
@@ -158,12 +163,12 @@ export class LeaderboardScene extends Phaser.Scene {
     };
 
     if (this.fromGame) {
-      this.createNavButton(cx, btnY, 160, 44, 'BACK', 0xffff00, resumeGame);
+      this.createNavButton(cx, btnY, 160, navBtnH, 'BACK', 0xffff00, resumeGame);
     } else if (isViewOnly) {
-      this.createNavButton(cx - 80, btnY, 230, 44, 'PLAY AGAIN', 0x00ff66, () => this.scene.start('GameScene'));
-      this.createNavButton(cx + 140, btnY, 120, 44, 'BACK', 0xffff00, () => this.scene.start('GameScene'));
+      this.createNavButton(cx - 80, btnY, 230, navBtnH, 'PLAY AGAIN', 0x00ff66, () => this.scene.start('GameScene'));
+      this.createNavButton(cx + 140, btnY, 120, navBtnH, 'BACK', 0xffff00, () => this.scene.start('GameScene'));
     } else {
-      this.createNavButton(cx, btnY, 250, 44, 'PLAY AGAIN', 0x00ff66, () => this.scene.start('GameScene'));
+      this.createNavButton(cx, btnY, 250, navBtnH, 'PLAY AGAIN', 0x00ff66, () => this.scene.start('GameScene'));
     }
 
     this.input.keyboard!.on('keydown', (event: KeyboardEvent) => {
@@ -182,7 +187,7 @@ export class LeaderboardScene extends Phaser.Scene {
     const gc = (color >> 8) & 0xff;
     const bc = color & 0xff;
     const dim = ((rc >> 1) << 16) | ((gc >> 1) << 8) | (bc >> 1);
-    const quarter = ((rc >> 2) << 16) | ((gc >> 2) << 8) | (bc >> 2);
+
     const bright = (Math.min(255, rc + 80) << 16) | (Math.min(255, gc + 80) << 8) | Math.min(255, bc + 80);
 
     // Outer glow frame (hover)

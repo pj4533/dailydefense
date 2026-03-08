@@ -1,0 +1,9 @@
+{
+  "name": "Daily Defense",
+  "short_name": "DailyDef",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0a0a0a",
+  "theme_color": "#06060f",
+  "start_url": "/"
+}

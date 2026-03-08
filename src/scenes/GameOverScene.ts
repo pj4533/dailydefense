@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Leaderboard } from '../logic/Leaderboard';
-import { CANVAS_WIDTH } from '../config';
+import { layout } from '../layout';
 
 const ARCADE_FONT = '"Press Start 2P", monospace';
 
@@ -39,14 +39,16 @@ export class GameOverScene extends Phaser.Scene {
     this.leaderboard = new Leaderboard();
     this.cameras.main.setBackgroundColor('#06060f');
 
-    const cx = CANVAS_WIDTH / 2;
+    const { canvasWidth, canvasHeight, isMobile } = layout;
+    const cx = canvasWidth / 2;
+    const frameH = canvasHeight - 31;
 
     // Decorative frame
     const frame = this.add.graphics();
     frame.fillStyle(0x440000);
-    this.solidBorder(frame, 20, 15, CANVAS_WIDTH - 40, 545, 2);
+    this.solidBorder(frame, 20, 15, canvasWidth - 40, frameH, 2);
     frame.fillStyle(0x220022);
-    this.solidBorder(frame, 24, 19, CANVAS_WIDTH - 48, 537, 1);
+    this.solidBorder(frame, 24, 19, canvasWidth - 48, frameH - 8, 1);
 
     // Site title
     this.add.text(cx, 35, 'DAILY DEFENSE', {
@@ -55,19 +57,19 @@ export class GameOverScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Title
-    this.add.text(cx, 70, 'GAME OVER', {
-      fontSize: '32px', color: '#ff4444', fontFamily: ARCADE_FONT,
+    this.add.text(cx, isMobile ? 65 : 70, 'GAME OVER', {
+      fontSize: isMobile ? '28px' : '32px', color: '#ff4444', fontFamily: ARCADE_FONT,
       stroke: '#440000', strokeThickness: 6,
     }).setOrigin(0.5);
 
     // Score
-    this.add.text(cx, 130, `SCORE: ${this.score}`, {
-      fontSize: '18px', color: '#00ffff', fontFamily: ARCADE_FONT,
+    this.add.text(cx, isMobile ? 115 : 130, `SCORE: ${this.score}`, {
+      fontSize: isMobile ? '16px' : '18px', color: '#00ffff', fontFamily: ARCADE_FONT,
       stroke: '#003333', strokeThickness: 4,
     }).setOrigin(0.5);
 
     // Prompt
-    this.add.text(cx, 185, 'ENTER YOUR INITIALS', {
+    this.add.text(cx, isMobile ? 160 : 185, 'ENTER YOUR INITIALS', {
       fontSize: '10px', color: '#00ff66', fontFamily: ARCADE_FONT,
     }).setOrigin(0.5);
 
@@ -75,10 +77,12 @@ export class GameOverScene extends Phaser.Scene {
     const slotBoxes = this.add.graphics();
     this.cursorGraphics = this.add.graphics();
 
-    const slotW = 50, slotH = 56, slotGap = 14;
+    const slotW = isMobile ? 60 : 50;
+    const slotH = isMobile ? 66 : 56;
+    const slotGap = 14;
     const totalSlotW = 3 * slotW + 2 * slotGap;
     const slotStartX = cx - totalSlotW / 2;
-    const slotY = 215;
+    const slotY = isMobile ? 185 : 215;
 
     for (let i = 0; i < 3; i++) {
       const sx = slotStartX + i * (slotW + slotGap);
@@ -102,14 +106,17 @@ export class GameOverScene extends Phaser.Scene {
     }
 
     // Instructions
-    this.add.text(cx, 298, 'TAP LETTERS OR USE KEYBOARD', {
+    const instrY = slotY + slotH + 18;
+    this.add.text(cx, instrY, 'TAP LETTERS OR USE KEYBOARD', {
       fontSize: '7px', color: '#444444', fontFamily: ARCADE_FONT,
     }).setOrigin(0.5);
 
     // Virtual keyboard
     const rows = ['ABCDEFGHI', 'JKLMNOPQR', 'STUVWXYZ'];
-    const keyW = 40, keyH = 40, keyGap = 4;
-    const kbStartY = 320;
+    const keyW = isMobile ? 52 : 40;
+    const keyH = isMobile ? 52 : 40;
+    const keyGap = 4;
+    const kbStartY = instrY + 22;
 
     for (let r = 0; r < rows.length; r++) {
       const row = rows[r];
@@ -247,10 +254,13 @@ export class GameOverScene extends Phaser.Scene {
 
     this.cursorGraphics.clear();
     if (!this.confirmed && this.initials.length < 3) {
-      const slotW = 50, slotGap = 14;
+      const { isMobile } = layout;
+      const slotW = isMobile ? 60 : 50;
+      const slotGap = 14;
       const totalSlotW = 3 * slotW + 2 * slotGap;
-      const slotStartX = CANVAS_WIDTH / 2 - totalSlotW / 2;
-      const slotY = 215, slotH = 56;
+      const slotStartX = layout.canvasWidth / 2 - totalSlotW / 2;
+      const slotY = isMobile ? 185 : 215;
+      const slotH = isMobile ? 66 : 56;
       const idx = this.initials.length;
       const cx = slotStartX + idx * (slotW + slotGap);
 

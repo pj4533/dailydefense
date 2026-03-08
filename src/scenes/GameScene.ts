@@ -4,10 +4,11 @@ import { Tower } from '../logic/Tower';
 import { Enemy } from '../logic/Enemy';
 import { TowerType, CellType } from '../types';
 import {
-  TILE_SIZE, GRID_COLS, GRID_ROWS, GAME_HEIGHT, UI_HEIGHT,
+  TILE_SIZE, GRID_COLS, GRID_ROWS, GAME_HEIGHT,
   STARTING_MONEY, STARTING_LIVES,
   TOWER_CONFIGS,
 } from '../config';
+import { layout } from '../layout';
 import { generateRandomPath } from '../logic/MapGenerator';
 import { generateWave } from '../logic/WaveGenerator';
 import { mulberry32 } from '../logic/seedRng';
@@ -138,10 +139,26 @@ export class GameScene extends Phaser.Scene {
     titleBg.fillStyle(0x00ffff, 0.4);
     titleBg.fillRect(0, 27, cw, 1);
 
-    this.add.text(cw / 2, 14, 'DAILY DEFENSE', {
-      fontSize: '16px', color: '#00ffff', fontFamily: ARCADE_FONT,
-      stroke: '#003333', strokeThickness: 4,
-    }).setOrigin(0.5).setDepth(12);
+    if (layout.isMobile) {
+      // On mobile, stats go in the banner alongside title
+      this.add.text(6, 14, 'DAILY DEFENSE', {
+        fontSize: '10px', color: '#00ffff', fontFamily: ARCADE_FONT,
+        stroke: '#003333', strokeThickness: 3,
+      }).setOrigin(0, 0.5).setDepth(12);
+
+      const bs = (color: string): Phaser.Types.GameObjects.Text.TextStyle => ({
+        fontSize: '8px', color, fontFamily: ARCADE_FONT,
+      });
+      this.moneyText = this.add.text(210, 14, '', bs('#00ff66')).setOrigin(0, 0.5).setDepth(12);
+      this.livesText = this.add.text(310, 14, '', bs('#ff4444')).setOrigin(0, 0.5).setDepth(12);
+      this.waveText = this.add.text(410, 14, '', bs('#00ffff')).setOrigin(0, 0.5).setDepth(12);
+      this.scoreText = this.add.text(530, 14, '', bs('#ffff00')).setOrigin(0, 0.5).setDepth(12);
+    } else {
+      this.add.text(cw / 2, 14, 'DAILY DEFENSE', {
+        fontSize: '16px', color: '#00ffff', fontFamily: ARCADE_FONT,
+        stroke: '#003333', strokeThickness: 4,
+      }).setOrigin(0.5).setDepth(12);
+    }
 
     this.createUI();
 
@@ -188,11 +205,12 @@ export class GameScene extends Phaser.Scene {
 
   private createUI(): void {
     const cw = GRID_COLS * TILE_SIZE;
+    const { uiHeight, btnHeight, isMobile } = layout;
     const hud = this.add.graphics();
 
     // Dark panel
     hud.fillStyle(0x06060f);
-    hud.fillRect(0, GAME_HEIGHT, cw, UI_HEIGHT);
+    hud.fillRect(0, GAME_HEIGHT, cw, uiHeight);
 
     // Top border — 2px solid with 1px bright highlight
     hud.fillStyle(0x006666);
@@ -200,63 +218,74 @@ export class GameScene extends Phaser.Scene {
     hud.fillStyle(0x00ffff);
     hud.fillRect(0, GAME_HEIGHT, cw, 1);
 
-    // Separator line
-    const sepY = GAME_HEIGHT + 20;
-    hud.fillStyle(0x002a2a);
-    hud.fillRect(8, sepY, cw - 16, 1);
+    if (!isMobile) {
+      // Separator line (desktop only — stats are in HUD)
+      const sepY = GAME_HEIGHT + 20;
+      hud.fillStyle(0x002a2a);
+      hud.fillRect(8, sepY, cw - 16, 1);
 
-    // Corner accents (pixel L-shapes)
-    hud.fillStyle(0x008888);
-    hud.fillRect(4, GAME_HEIGHT + 4, 12, 1);
-    hud.fillRect(4, GAME_HEIGHT + 4, 1, 8);
-    hud.fillRect(cw - 16, GAME_HEIGHT + 4, 12, 1);
-    hud.fillRect(cw - 5, GAME_HEIGHT + 4, 1, 8);
-    hud.fillRect(4, GAME_HEIGHT + UI_HEIGHT - 6, 12, 1);
-    hud.fillRect(4, GAME_HEIGHT + UI_HEIGHT - 13, 1, 8);
-    hud.fillRect(cw - 16, GAME_HEIGHT + UI_HEIGHT - 6, 12, 1);
-    hud.fillRect(cw - 5, GAME_HEIGHT + UI_HEIGHT - 13, 1, 8);
+      // Corner accents (pixel L-shapes)
+      hud.fillStyle(0x008888);
+      hud.fillRect(4, GAME_HEIGHT + 4, 12, 1);
+      hud.fillRect(4, GAME_HEIGHT + 4, 1, 8);
+      hud.fillRect(cw - 16, GAME_HEIGHT + 4, 12, 1);
+      hud.fillRect(cw - 5, GAME_HEIGHT + 4, 1, 8);
+      hud.fillRect(4, GAME_HEIGHT + uiHeight - 6, 12, 1);
+      hud.fillRect(4, GAME_HEIGHT + uiHeight - 13, 1, 8);
+      hud.fillRect(cw - 16, GAME_HEIGHT + uiHeight - 6, 12, 1);
+      hud.fillRect(cw - 5, GAME_HEIGHT + uiHeight - 13, 1, 8);
 
-    // Stats
-    const statsY = GAME_HEIGHT + 7;
-    const s = (color: string): Phaser.Types.GameObjects.Text.TextStyle => ({
-      fontSize: '9px', color, fontFamily: ARCADE_FONT,
-    });
+      // Stats
+      const statsY = GAME_HEIGHT + 7;
+      const s = (color: string): Phaser.Types.GameObjects.Text.TextStyle => ({
+        fontSize: '9px', color, fontFamily: ARCADE_FONT,
+      });
 
-    this.add.text(10, statsY, this.seedLabel, s('#00ffff'));
-    this.moneyText = this.add.text(110, statsY, '', s('#00ff66'));
-    this.livesText = this.add.text(230, statsY, '', s('#ff4444'));
-    this.waveText = this.add.text(350, statsY, '', s('#00ffff'));
-    this.scoreText = this.add.text(480, statsY, '', s('#ffff00'));
+      this.add.text(10, statsY, this.seedLabel, s('#00ffff'));
+      this.moneyText = this.add.text(110, statsY, '', s('#00ff66'));
+      this.livesText = this.add.text(230, statsY, '', s('#ff4444'));
+      this.waveText = this.add.text(350, statsY, '', s('#00ffff'));
+      this.scoreText = this.add.text(480, statsY, '', s('#ffff00'));
+    }
 
-    // Action buttons — fill the width evenly
-    const btnY = GAME_HEIGHT + 24;
-    const btnH = 42;
-    const gap = 8;
+    // Action buttons — computed layout
+    const btnY = isMobile
+      ? GAME_HEIGHT + (uiHeight - btnHeight) / 2
+      : GAME_HEIGHT + 24;
+    const gap = 6;
+    const totalWidth = cw - 12; // 6px margins each side
+    const btnW = Math.floor((totalWidth - 4 * gap) / 5);
+    const fontSize = isMobile ? '10px' : '9px';
 
-    this.ladybugBtn = this.makeArcadeBtn(6, btnY, 160, btnH,
-      `LADYBUG $${TOWER_CONFIGS[TowerType.LADYBUG].cost}`, 0xff4444, () => {
+    let x = 6;
+
+    this.ladybugBtn = this.makeArcadeBtn(x, btnY, btnW, btnHeight,
+      `LADYBUG $${TOWER_CONFIGS[TowerType.LADYBUG].cost}`, 0xff4444, fontSize, () => {
         this.selectedTowerType = TowerType.LADYBUG;
         this.selectedTower = null;
         this.updateButtonHighlights();
         this.updateSellButton();
       });
     this.addBtnHover(this.ladybugBtn, () => this.updateButtonHighlights());
+    x += btnW + gap;
 
-    this.mantisBtn = this.makeArcadeBtn(6 + 160 + gap, btnY, 160, btnH,
-      `MANTIS $${TOWER_CONFIGS[TowerType.MANTIS].cost}`, 0x44ff44, () => {
+    this.mantisBtn = this.makeArcadeBtn(x, btnY, btnW, btnHeight,
+      `MANTIS $${TOWER_CONFIGS[TowerType.MANTIS].cost}`, 0x44ff44, fontSize, () => {
         this.selectedTowerType = TowerType.MANTIS;
         this.selectedTower = null;
         this.updateButtonHighlights();
         this.updateSellButton();
       });
     this.addBtnHover(this.mantisBtn, () => this.updateButtonHighlights());
+    x += btnW + gap;
 
-    this.startWaveBtn = this.makeArcadeBtn(6 + 2 * (160 + gap), btnY, 150, btnH,
-      'START WAVE', 0x00ff66, () => {
+    this.startWaveBtn = this.makeArcadeBtn(x, btnY, btnW, btnHeight,
+      'START WAVE', 0x00ff66, fontSize, () => {
         this.engine.startNextWave();
       });
+    x += btnW + gap;
 
-    this.sellBtn = this.makeArcadeBtn(6 + 2 * (160 + gap) + 150 + gap, btnY, 120, btnH, '', 0xff4444, () => {
+    this.sellBtn = this.makeArcadeBtn(x, btnY, btnW, btnHeight, '', 0xff4444, fontSize, () => {
       if (this.selectedTower) {
         this.engine.removeTower(this.selectedTower.col, this.selectedTower.row);
         this.selectedTower = null;
@@ -266,8 +295,9 @@ export class GameScene extends Phaser.Scene {
     this.sellBtn.g.setVisible(false);
     this.sellBtn.label.setVisible(false);
     this.sellBtn.zone.removeInteractive();
+    x += btnW + gap;
 
-    const scoresBtn = this.makeArcadeBtn(cw - 6 - 130, btnY, 130, btnH, 'SCORES', 0xffff00, () => {
+    const scoresBtn = this.makeArcadeBtn(x, btnY, btnW, btnHeight, 'SCORES', 0xffff00, fontSize, () => {
       this.scene.sleep();
       this.scene.launch('LeaderboardScene', {
         score: 0, initials: '', seed: this.seed, seedLabel: this.seedLabel, fromGame: true,
@@ -293,7 +323,7 @@ export class GameScene extends Phaser.Scene {
     const gc = (color >> 8) & 0xff;
     const bc = color & 0xff;
     const dim = ((rc >> 1) << 16) | ((gc >> 1) << 8) | (bc >> 1);
-    const quarter = ((rc >> 2) << 16) | ((gc >> 2) << 8) | (bc >> 2);
+
     const bright = (Math.min(255, rc + 80) << 16) | (Math.min(255, gc + 80) << 8) | Math.min(255, bc + 80);
 
     const solidBorder = (bx: number, by: number, bw: number, bh: number, t: number) => {
@@ -341,12 +371,12 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private makeArcadeBtn(x: number, y: number, w: number, h: number, label: string, borderColor: number, onClick: () => void): ArcadeBtn {
+  private makeArcadeBtn(x: number, y: number, w: number, h: number, label: string, borderColor: number, fontSize: string, onClick: () => void): ArcadeBtn {
     const g = this.add.graphics();
     this.drawBtnGfx(g, x, y, w, h, borderColor, false);
 
     const text = this.add.text(x + w / 2, y + h / 2, label, {
-      fontSize: '9px',
+      fontSize,
       color: '#' + borderColor.toString(16).padStart(6, '0'),
       fontFamily: ARCADE_FONT,
     }).setOrigin(0.5);
@@ -430,7 +460,8 @@ export class GameScene extends Phaser.Scene {
     if (!this.pointerDown || !this.dragTower) return;
     const dx = pointer.x - (this.dragStartCol * TILE_SIZE + TILE_SIZE / 2);
     const dy = pointer.y - (this.dragStartRow * TILE_SIZE + TILE_SIZE / 2);
-    if (!this.isDragging && Math.sqrt(dx * dx + dy * dy) >= TILE_SIZE / 2) {
+    const dragThreshold = layout.isMobile ? TILE_SIZE * 0.75 : TILE_SIZE / 2;
+    if (!this.isDragging && Math.sqrt(dx * dx + dy * dy) >= dragThreshold) {
       this.isDragging = true;
     }
     if (this.isDragging) {
