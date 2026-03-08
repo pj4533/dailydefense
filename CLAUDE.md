@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm test` — Run all tests with coverage (vitest + v8)
 - `npx vitest run tests/GameState.test.ts` — Run a single test file
 - `npx tsc --noEmit` — Type-check only
+- `npm run reset-leaderboards` — **DESTRUCTIVE: Wipes ALL leaderboard and session data from Redis. Only run with explicit user approval.** Requires `.env.local` (run `vercel env pull .env.local` first).
 
 ## Deployment
 
