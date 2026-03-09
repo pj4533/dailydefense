@@ -76,7 +76,7 @@ export default async function handler(req: Request): Promise<Response> {
   };
 
   await redis.set(`session:${sessionId}`, JSON.stringify(sessionState), { ex: 3600 });
-  await trackActivity(redis, sessionState.playerId || sessionId, 'human');
+  await trackActivity(redis, req, 'human', sessionState.playerId);
   const activePlayers = await getActiveCounts(redis);
 
   return Response.json({ sessionId, activePlayers }, {

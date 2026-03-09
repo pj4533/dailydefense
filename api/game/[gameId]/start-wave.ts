@@ -45,7 +45,7 @@ export default async function handler(req: Request): Promise<Response> {
     return Response.json({ error: 'Missing gameId' }, { status: 400 });
   }
 
-  await trackActivity(redis, gameId, 'agent');
+  await trackActivity(redis, req, 'agent');
 
   const data = await redis.get(`game:${gameId}`) as string | null;
   if (!data) {

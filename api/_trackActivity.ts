@@ -4,11 +4,14 @@ const FIFTEEN_MINUTES = 15 * 60 * 1000;
 
 export async function trackActivity(
   redis: Redis,
-  playerId: string,
+  req: Request,
   type: 'human' | 'agent',
+  clientId?: string,
 ): Promise<void> {
+  const ip = req.headers.get('x-real-ip') || 'unknown';
+  const member = clientId ? `${ip}:${clientId}` : ip;
   const key = type === 'human' ? 'active_humans' : 'active_agents';
-  await redis.zadd(key, { score: Date.now(), member: playerId });
+  await redis.zadd(key, { score: Date.now(), member });
 }
 
 export async function getActiveCounts(

@@ -86,7 +86,7 @@ export default async function handler(req: Request): Promise<Response> {
   };
 
   await redis.set(`game:${gameId}`, JSON.stringify(gameState), { ex: 3600 });
-  await trackActivity(redis, gameId, 'agent');
+  await trackActivity(redis, req, 'agent');
 
   return Response.json({
     gameId,
