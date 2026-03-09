@@ -55,7 +55,7 @@ export default async function handler(req: Request): Promise<Response> {
   session.waveInProgress = true;
 
   await redis.set(`session:${sessionId}`, JSON.stringify(session), { ex: 3600 });
-  await trackActivity(redis, sessionId, 'human');
+  await trackActivity(redis, session.playerId || sessionId, 'human');
 
   return Response.json({
     success: true,

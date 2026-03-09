@@ -5,6 +5,12 @@ import { TowerType } from '../src/types';
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
+const mockStorage: Record<string, string> = {};
+vi.stubGlobal('localStorage', {
+  getItem: (key: string) => mockStorage[key] ?? null,
+  setItem: (key: string, value: string) => { mockStorage[key] = value; },
+});
+
 function jsonResponse(data: unknown, ok = true) {
   return Promise.resolve({
     ok,
@@ -87,15 +93,17 @@ describe('Leaderboard', () => {
 
   describe('startSession', () => {
     it('returns session data on success', async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ sessionId: 'abc' }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ sessionId: 'abc', activePlayers: { humans: 1, agents: 0 } }));
       const lb = new Leaderboard();
       const session = await lb.startSession(20260307);
-      expect(session).toEqual({ sessionId: 'abc' });
+      expect(session).toEqual({ sessionId: 'abc', activePlayers: { humans: 1, agents: 0 } });
       expect(mockFetch).toHaveBeenCalledWith('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed: 20260307 }),
+        body: expect.stringContaining('"seed":20260307'),
       });
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.playerId).toEqual(expect.any(String));
     });
 
     it('returns null on fetch error', async () => {

@@ -99,7 +99,7 @@ export default async function handler(req: Request): Promise<Response> {
   const { result, state: updatedState } = simulateWaveWithActions(session, validatedActions);
 
   await redis.set(`session:${sessionId}`, JSON.stringify(updatedState), { ex: 3600 });
-  await trackActivity(redis, sessionId, 'human');
+  await trackActivity(redis, session.playerId || sessionId, 'human');
   const activePlayers = await getActiveCounts(redis);
 
   return Response.json({

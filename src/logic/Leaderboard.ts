@@ -23,13 +23,23 @@ export interface SessionData {
   activePlayers?: ActivePlayers;
 }
 
+function getPlayerId(): string {
+  const key = 'dd_player_id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 export class Leaderboard {
   async startSession(seed: number): Promise<SessionData | null> {
     try {
       const res = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed }),
+        body: JSON.stringify({ seed, playerId: getPlayerId() }),
       });
       if (!res.ok) return null;
       const data = await res.json();

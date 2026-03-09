@@ -12,4 +12,5 @@ export interface BrowserSessionState {
   createdAt: number;
   submitted: boolean;
   waveInProgress: boolean;
+  playerId?: string;
 }

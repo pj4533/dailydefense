@@ -49,7 +49,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const body = await req.json();
-  const { seed } = body;
+  const { seed, playerId } = body;
 
   if (typeof seed !== 'number' || !isValidSeed(seed)) {
     return Response.json({ error: 'Invalid seed' }, { status: 400 });
@@ -72,10 +72,11 @@ export default async function handler(req: Request): Promise<Response> {
     createdAt: Date.now(),
     submitted: false,
     waveInProgress: false,
+    playerId: typeof playerId === 'string' ? playerId : undefined,
   };
 
   await redis.set(`session:${sessionId}`, JSON.stringify(sessionState), { ex: 3600 });
-  await trackActivity(redis, sessionId, 'human');
+  await trackActivity(redis, sessionState.playerId || sessionId, 'human');
   const activePlayers = await getActiveCounts(redis);
 
   return Response.json({ sessionId, activePlayers }, {
