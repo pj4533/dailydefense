@@ -3,6 +3,7 @@ import { GRID_COLS, GRID_ROWS, STARTING_MONEY, STARTING_LIVES } from '../src/con
 import { mulberry32 } from '../src/logic/seedRng';
 import { generateRandomPath } from '../src/logic/MapGenerator';
 import { BrowserSessionState } from '../src/logic/BrowserSessionState';
+import { trackActivity, getActiveCounts } from './_trackActivity';
 
 export const config = { runtime: 'edge' };
 
@@ -74,8 +75,10 @@ export default async function handler(req: Request): Promise<Response> {
   };
 
   await redis.set(`session:${sessionId}`, JSON.stringify(sessionState), { ex: 3600 });
+  await trackActivity(redis, sessionId, 'human');
+  const activePlayers = await getActiveCounts(redis);
 
-  return Response.json({ sessionId }, {
+  return Response.json({ sessionId, activePlayers }, {
     headers: { 'Access-Control-Allow-Origin': '*' },
   });
 }

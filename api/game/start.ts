@@ -5,6 +5,7 @@ import { mulberry32 } from '../../src/logic/seedRng';
 import { generateRandomPath } from '../../src/logic/MapGenerator';
 import { GameMap } from '../../src/logic/GameMap';
 import { AgentGameState } from '../../src/logic/AgentGameState';
+import { trackActivity } from '../_trackActivity';
 
 export const config = { runtime: 'edge' };
 
@@ -85,6 +86,7 @@ export default async function handler(req: Request): Promise<Response> {
   };
 
   await redis.set(`game:${gameId}`, JSON.stringify(gameState), { ex: 3600 });
+  await trackActivity(redis, gameId, 'agent');
 
   return Response.json({
     gameId,

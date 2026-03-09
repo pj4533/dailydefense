@@ -1,6 +1,7 @@
 import { Redis } from '@upstash/redis';
 import { simulateWave } from '../../../src/logic/simulateWave';
 import { AgentGameState } from '../../../src/logic/AgentGameState';
+import { trackActivity } from '../../_trackActivity';
 
 export const config = { runtime: 'edge' };
 
@@ -43,6 +44,8 @@ export default async function handler(req: Request): Promise<Response> {
   if (!gameId) {
     return Response.json({ error: 'Missing gameId' }, { status: 400 });
   }
+
+  await trackActivity(redis, gameId, 'agent');
 
   const data = await redis.get(`game:${gameId}`) as string | null;
   if (!data) {

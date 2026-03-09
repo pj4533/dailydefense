@@ -3,6 +3,7 @@ import { BrowserSessionState } from '../../src/logic/BrowserSessionState';
 import { WaveAction, WaveActionType } from '../../src/logic/WaveAction';
 import { simulateWaveWithActions } from '../../src/logic/simulateWave';
 import { TowerType } from '../../src/types';
+import { trackActivity, getActiveCounts } from '../_trackActivity';
 
 export const config = { runtime: 'edge' };
 
@@ -98,6 +99,8 @@ export default async function handler(req: Request): Promise<Response> {
   const { result, state: updatedState } = simulateWaveWithActions(session, validatedActions);
 
   await redis.set(`session:${sessionId}`, JSON.stringify(updatedState), { ex: 3600 });
+  await trackActivity(redis, sessionId, 'human');
+  const activePlayers = await getActiveCounts(redis);
 
   return Response.json({
     waveResult: result,
@@ -109,6 +112,7 @@ export default async function handler(req: Request): Promise<Response> {
       gameOver: updatedState.gameOver,
       towers: updatedState.towers,
     },
+    activePlayers,
   }, {
     headers: { 'Access-Control-Allow-Origin': '*' },
   });

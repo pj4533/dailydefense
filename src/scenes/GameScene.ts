@@ -13,7 +13,7 @@ import { generateRandomPath } from '../logic/MapGenerator';
 import { generateWave } from '../logic/WaveGenerator';
 import { mulberry32 } from '../logic/seedRng';
 import { getDailySeed, getDailySeedLabel } from '../logic/dailySeed';
-import { Leaderboard, SessionData } from '../logic/Leaderboard';
+import { Leaderboard, SessionData, ActivePlayers } from '../logic/Leaderboard';
 import { ActionRecorder } from '../logic/ActionRecorder';
 
 // Map tower types to spritesheet keys and animation config
@@ -82,6 +82,8 @@ export class GameScene extends Phaser.Scene {
   private simAccumulator: number = 0;
   private readonly SIM_DT = 1 / 60;
   private serverScore: number = 0;
+  private humansText!: Phaser.GameObjects.Text;
+  private agentsText!: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -133,6 +135,7 @@ export class GameScene extends Phaser.Scene {
     this.actionRecorder = new ActionRecorder();
     this.leaderboard.startSession(this.seed).then(data => {
       this.sessionData = data;
+      if (data?.activePlayers) this.updateActiveCounts(data.activePlayers);
     });
 
     this.engine.onWaveComplete = () => {
@@ -146,6 +149,7 @@ export class GameScene extends Phaser.Scene {
             if (result.state.gameOver) {
               this.engine.state.gameOver = true;
             }
+            if (result.activePlayers) this.updateActiveCounts(result.activePlayers);
           }
           this.waveActive = false;
         });
@@ -188,11 +192,23 @@ export class GameScene extends Phaser.Scene {
       this.livesText = this.add.text(310, 14, '', bs('#ff4444')).setOrigin(0, 0.5).setDepth(12);
       this.waveText = this.add.text(410, 14, '', bs('#00ffff')).setOrigin(0, 0.5).setDepth(12);
       this.scoreText = this.add.text(530, 14, '', bs('#ffff00')).setOrigin(0, 0.5).setDepth(12);
+
+      // Hidden placeholders to avoid null checks
+      this.humansText = this.add.text(0, 0, '').setVisible(false);
+      this.agentsText = this.add.text(0, 0, '').setVisible(false);
     } else {
       this.add.text(cw / 2, 14, 'DAILY DEFENSE', {
         fontSize: '16px', color: '#00ffff', fontFamily: ARCADE_FONT,
         stroke: '#003333', strokeThickness: 4,
       }).setOrigin(0.5).setDepth(12);
+
+      this.agentsText = this.add.text(cw - 8, 14, '0 AGENTS', {
+        fontSize: '8px', color: '#886eff', fontFamily: ARCADE_FONT,
+      }).setOrigin(1, 0.5).setDepth(12);
+
+      this.humansText = this.add.text(this.agentsText.x - this.agentsText.width - 12, 14, '0 HUMANS', {
+        fontSize: '8px', color: '#448866', fontFamily: ARCADE_FONT,
+      }).setOrigin(1, 0.5).setDepth(12);
     }
 
     this.createUI();
@@ -772,5 +788,13 @@ export class GameScene extends Phaser.Scene {
     this.livesText.setText(`HP ${this.engine.state.lives}`);
     this.waveText.setText(`WAVE ${this.engine.waveManager.currentWave}`);
     this.scoreText.setText(`${this.engine.state.score} PTS`);
+  }
+
+  private updateActiveCounts(counts: ActivePlayers): void {
+    this.humansText.setText(`${counts.humans} ${counts.humans === 1 ? 'HUMAN' : 'HUMANS'}`);
+    this.agentsText.setText(`${counts.agents} ${counts.agents === 1 ? 'AGENT' : 'AGENTS'}`);
+    if (!layout.isMobile) {
+      this.humansText.setX(this.agentsText.x - this.agentsText.width - 12);
+    }
   }
 }

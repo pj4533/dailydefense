@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { BrowserSessionState } from '../../src/logic/BrowserSessionState';
+import { trackActivity } from '../_trackActivity';
 
 export const config = { runtime: 'edge' };
 
@@ -54,6 +55,7 @@ export default async function handler(req: Request): Promise<Response> {
   session.waveInProgress = true;
 
   await redis.set(`session:${sessionId}`, JSON.stringify(session), { ex: 3600 });
+  await trackActivity(redis, sessionId, 'human');
 
   return Response.json({
     success: true,

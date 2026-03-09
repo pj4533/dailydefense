@@ -13,8 +13,14 @@ export interface LeaderboardResult {
   error: boolean;
 }
 
+export interface ActivePlayers {
+  humans: number;
+  agents: number;
+}
+
 export interface SessionData {
   sessionId: string;
+  activePlayers?: ActivePlayers;
 }
 
 export class Leaderboard {
@@ -27,7 +33,10 @@ export class Leaderboard {
       });
       if (!res.ok) return null;
       const data = await res.json();
-      return { sessionId: data.sessionId };
+      return {
+        sessionId: data.sessionId,
+        activePlayers: data.activePlayers,
+      };
     } catch {
       return null;
     }
@@ -116,7 +125,7 @@ export class Leaderboard {
     }
   }
 
-  async completeWave(sessionId: string, actions: WaveAction[]): Promise<{ waveResult: unknown; state: { money: number; lives: number; score: number; currentWave: number; gameOver: boolean; towers: { col: number; row: number; type: TowerType }[] } } | null> {
+  async completeWave(sessionId: string, actions: WaveAction[]): Promise<{ waveResult: unknown; state: { money: number; lives: number; score: number; currentWave: number; gameOver: boolean; towers: { col: number; row: number; type: TowerType }[] }; activePlayers?: ActivePlayers } | null> {
     try {
       const res = await fetch('/api/session/wave-complete', {
         method: 'POST',
