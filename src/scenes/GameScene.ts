@@ -61,7 +61,7 @@ export class GameScene extends Phaser.Scene {
   private moneyText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
   private waveText!: Phaser.GameObjects.Text;
-  private waveProfileText!: Phaser.GameObjects.Text;
+  private waveProfileParts: Phaser.GameObjects.Text[] = [];
   private scoreText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
   private waveSchedule: WaveProfileName[] = [];
@@ -204,7 +204,6 @@ export class GameScene extends Phaser.Scene {
       this.moneyText = this.add.text(200, 14, '', bs('#00ff66')).setOrigin(0, 0.5).setDepth(12);
       this.livesText = this.add.text(290, 14, '', bs('#ff4444')).setOrigin(0, 0.5).setDepth(12);
       this.waveText = this.add.text(380, 14, '', bs('#00ffff')).setOrigin(0, 0.5).setDepth(12);
-      this.waveProfileText = this.add.text(0, 0, '').setVisible(false);
       this.scoreText = this.add.text(490, 14, '', bs('#ffff00')).setOrigin(0, 0.5).setDepth(12);
 
       const cs = (color: string): Phaser.Types.GameObjects.Text.TextStyle => ({
@@ -319,10 +318,21 @@ export class GameScene extends Phaser.Scene {
       hud.fillStyle(0x002a2a);
       hud.fillRect(8, GAME_HEIGHT + 68, cw - 16, 1);
 
-      // Wave profile bar — bottom 28px of HUD, below buttons
-      this.waveProfileText = this.add.text(cw / 2, GAME_HEIGHT + 79, '', {
-        fontSize: '9px', color: '#00ffff', fontFamily: ARCADE_FONT,
-      }).setOrigin(0.5, 0.5).setDepth(12);
+      // Wave profile bar — 5 parts: name, sep, name, sep, name
+      const profileY = GAME_HEIGHT + 79;
+      const sepStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+        fontSize: '9px', color: '#335555', fontFamily: ARCADE_FONT,
+      };
+      const nameStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+        fontSize: '9px', color: '#ffffff', fontFamily: ARCADE_FONT,
+      };
+      this.waveProfileParts = [
+        this.add.text(0, profileY, '', nameStyle).setOrigin(0, 0.5).setDepth(12), // current
+        this.add.text(0, profileY, ' > ', sepStyle).setOrigin(0, 0.5).setDepth(12), // sep
+        this.add.text(0, profileY, '', nameStyle).setOrigin(0, 0.5).setDepth(12), // next1
+        this.add.text(0, profileY, ' > ', sepStyle).setOrigin(0, 0.5).setDepth(12), // sep
+        this.add.text(0, profileY, '', nameStyle).setOrigin(0, 0.5).setDepth(12), // next2
+      ];
     }
 
     // Action buttons — computed layout
@@ -815,19 +825,30 @@ export class GameScene extends Phaser.Scene {
     this.waveText.setText(`WAVE ${currentWave}`);
     this.scoreText.setText(`${this.engine.state.score} PTS`);
 
-    // Desktop only: wave profile bar below buttons
-    if (!layout.isMobile) {
+    // Desktop only: wave profile bar — each name independently colored
+    if (!layout.isMobile && this.waveProfileParts.length === 5) {
+      const cw = GRID_COLS * TILE_SIZE;
       const currentProfileName = this.waveSchedule[currentWave] ?? 'balanced';
       const next1 = this.waveSchedule[currentWave + 1];
       const next2 = this.waveSchedule[currentWave + 2];
 
-      let text = currentProfileName.toUpperCase();
-      if (next1) text += `  >  ${next1.toUpperCase()}`;
-      if (next2) text += `  >  ${next2.toUpperCase()}`;
-      this.waveProfileText.setText(text);
+      // Set text and individual colors
+      this.waveProfileParts[0].setText(currentProfileName.toUpperCase()).setColor(PROFILE_COLORS[currentProfileName] ?? '#00ffff');
+      this.waveProfileParts[1].setVisible(!!next1);
+      this.waveProfileParts[2].setText(next1 ? next1.toUpperCase() : '').setVisible(!!next1);
+      if (next1) this.waveProfileParts[2].setColor(PROFILE_COLORS[next1] ?? '#00ffff');
+      this.waveProfileParts[3].setVisible(!!next2);
+      this.waveProfileParts[4].setText(next2 ? next2.toUpperCase() : '').setVisible(!!next2);
+      if (next2) this.waveProfileParts[4].setColor(PROFILE_COLORS[next2] ?? '#00ffff');
 
-      const color = PROFILE_COLORS[currentProfileName] ?? '#00ffff';
-      this.waveProfileText.setColor(color);
+      // Center the group horizontally
+      const visibleParts = this.waveProfileParts.filter(p => p.visible);
+      const totalWidth = visibleParts.reduce((sum, p) => sum + p.width, 0);
+      let x = cw / 2 - totalWidth / 2;
+      for (const part of visibleParts) {
+        part.setX(x);
+        x += part.width;
+      }
     }
   }
 
