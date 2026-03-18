@@ -218,6 +218,149 @@
     @media (hover: none) {
       #fullscreen-btn { display: block; }
     }
+
+    /* Help trigger button */
+    #help-btn {
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      color: #4a7a7a;
+      font-size: 9px;
+      font-family: monospace;
+      letter-spacing: 0.12em;
+      opacity: 0.65;
+      z-index: 20;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px 6px;
+      border-top: 1px solid #2a4a4a;
+      transition: opacity 0.3s ease, color 0.3s ease;
+      white-space: nowrap;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    #help-btn:hover { opacity: 1; color: #5ecece; }
+    @media (max-height: 500px), (max-width: 600px) { #help-btn { display: none; } }
+    @media (hover: none) { #help-btn { display: none; } }
+
+    /* Modal overlay */
+    #help-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    #help-modal.open { display: flex; animation: modalFadeIn 0.18s ease; }
+    @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    #help-panel {
+      position: relative;
+      background: #06060f;
+      border: 1px solid #00ffff;
+      box-shadow: 0 0 24px rgba(0,255,255,0.25), 0 0 60px rgba(0,255,255,0.08), inset 0 0 40px rgba(0,0,0,0.5);
+      max-width: 560px;
+      width: calc(100vw - 40px);
+      max-height: calc(100vh - 60px);
+      overflow-y: auto;
+      padding: 28px 24px 24px;
+      animation: panelIn 0.18s ease;
+      background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 3px);
+    }
+    @keyframes panelIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+
+    /* Pixel corner accents */
+    #help-panel::before {
+      content: '';
+      position: absolute;
+      top: 6px; left: 6px;
+      width: 12px; height: 12px;
+      border: 1px solid #00ffff;
+      border-right: none; border-bottom: none;
+    }
+    #help-panel::after {
+      content: '';
+      position: absolute;
+      bottom: 6px; right: 6px;
+      width: 12px; height: 12px;
+      border: 1px solid #00ffff;
+      border-left: none; border-top: none;
+    }
+
+    #help-close {
+      position: absolute;
+      top: 10px; right: 12px;
+      background: none; border: none;
+      color: #4a7a7a;
+      font-family: monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      padding: 4px 6px;
+      transition: color 0.2s ease;
+    }
+    #help-close:hover { color: #ff4444; }
+
+    .help-title {
+      font-family: "Press Start 2P", monospace;
+      font-size: 11px;
+      color: #00ffff;
+      text-shadow: 0 0 10px rgba(0,255,255,0.5);
+      margin: 0 0 22px 0;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #0a2a2a;
+      letter-spacing: 0.05em;
+    }
+    .help-section { margin-bottom: 20px; }
+    .help-section-title {
+      font-family: "Press Start 2P", monospace;
+      font-size: 6px;
+      color: #336644;
+      letter-spacing: 0.2em;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .help-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+      align-items: baseline;
+    }
+    .wave-name {
+      font-family: "Press Start 2P", monospace;
+      font-size: 7px;
+      min-width: 72px;
+      flex-shrink: 0;
+      letter-spacing: 0.04em;
+    }
+    .tower-name {
+      font-family: "Press Start 2P", monospace;
+      font-size: 7px;
+      min-width: 100px;
+      flex-shrink: 0;
+      color: #00ff66;
+      letter-spacing: 0.04em;
+    }
+    .help-desc {
+      font-family: monospace;
+      font-size: 10px;
+      color: #446666;
+      letter-spacing: 0.04em;
+      line-height: 1.5;
+    }
+    .help-tip {
+      font-family: monospace;
+      font-size: 10px;
+      color: #3a5a5a;
+      letter-spacing: 0.04em;
+      line-height: 2;
+      padding-left: 14px;
+      position: relative;
+    }
+    .help-tip::before { content: '>'; position: absolute; left: 0; color: #2a4a3a; }
   </style>
 </head>
 <body>
@@ -242,6 +385,61 @@
     <div id="game-container"></div>
   </div>
   <a id="agent-link" href="/skill.md">have your agent play: skill.md</a>
+  <button id="help-btn" aria-label="How to play">[?]</button>
+
+  <div id="help-modal" role="dialog" aria-modal="true" aria-label="How to Play">
+    <div id="help-panel">
+      <button id="help-close" aria-label="Close">[X]</button>
+      <h2 class="help-title">HOW TO PLAY</h2>
+
+      <div class="help-section">
+        <div class="help-section-title">// WAVE TYPES</div>
+        <div class="help-row">
+          <span class="wave-name" style="color:#00ffff">BALANCED</span>
+          <span class="help-desc">Standard mix of garden pests. Good wave to get established.</span>
+        </div>
+        <div class="help-row">
+          <span class="wave-name" style="color:#ff8844">SWARM</span>
+          <span class="help-desc">Fast ant hordes. High speed and count. Spider towers help slow them.</span>
+        </div>
+        <div class="help-row">
+          <span class="wave-name" style="color:#44dd88">SIEGE</span>
+          <span class="help-desc">Heavy armored beetles. Slow but very tough. Mantis towers work well.</span>
+        </div>
+        <div class="help-row">
+          <span class="wave-name" style="color:#ffff44">RUSH</span>
+          <span class="help-desc">Small groups of speedy ants. Constant pressure. Spider for crowd control.</span>
+        </div>
+        <div class="help-row">
+          <span class="wave-name" style="color:#cc66ff">HORDE</span>
+          <span class="help-desc">Massive waves of everything. Full map coverage required.</span>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">// TOWERS</div>
+        <div class="help-row">
+          <span class="tower-name">LADYBUG $25</span>
+          <span class="help-desc">Fast attack, cheap. Best DPS per dollar. Great against light pests.</span>
+        </div>
+        <div class="help-row">
+          <span class="tower-name">SPIDER $30</span>
+          <span class="help-desc">Slows nearby enemies. Support tower. Pairs well with any other tower.</span>
+        </div>
+        <div class="help-row">
+          <span class="tower-name">MANTIS $50</span>
+          <span class="help-desc">Long range, expensive. Best against armored beetles (SIEGE waves).</span>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">// TIPS</div>
+        <div class="help-tip">Wave 0 is always BALANCED — a safe start</div>
+        <div class="help-tip">Click a placed tower to select and sell it</div>
+        <div class="help-tip">New wave types unlock as you progress</div>
+      </div>
+    </div>
+  </div>
   <script type="module" src="/src/main.ts"></script>
   <script>
     // Size game container to actual visible viewport (fixes iOS Safari mismatch)
@@ -260,6 +458,22 @@
         window.visualViewport.addEventListener('resize', sizeContainer);
       }
       window.addEventListener('resize', sizeContainer);
+    })();
+
+    // How to play modal
+    (function() {
+      var btn = document.getElementById('help-btn');
+      var modal = document.getElementById('help-modal');
+      var closeBtn = document.getElementById('help-close');
+      if (!btn || !modal || !closeBtn) return;
+      function openModal() { modal.classList.add('open'); }
+      function closeModal() { modal.classList.remove('open'); }
+      btn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+      });
     })();
 
     // Fullscreen toggle

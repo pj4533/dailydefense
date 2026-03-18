@@ -74,6 +74,7 @@ export class GameScene extends Phaser.Scene {
   private waveBarNow: Phaser.GameObjects.Text | null = null;
   private waveBarCurrent: Phaser.GameObjects.Text | null = null;
   private waveBarNext1: Phaser.GameObjects.Text | null = null;
+  private waveBarNextLabel: Phaser.GameObjects.Text | null = null;
   private waveBarSep: Phaser.GameObjects.Text | null = null;
   private waveBarNext2: Phaser.GameObjects.Text | null = null;
   private scoreText!: Phaser.GameObjects.Text;
@@ -338,8 +339,8 @@ export class GameScene extends Phaser.Scene {
       // Background graphics for current profile highlight (redrawn each frame)
       this.waveBarBg = this.add.graphics().setDepth(11);
 
-      // "NOW" dim label
-      this.waveBarNow = this.add.text(12, barY, 'NOW', {
+      // "WAVE TYPE:" dim label
+      this.waveBarNow = this.add.text(12, barY, 'WAVE TYPE:', {
         fontSize: '6px', color: '#2a4a4a', fontFamily: ARCADE_FONT,
       }).setOrigin(0, 0.5).setDepth(12);
 
@@ -360,6 +361,11 @@ export class GameScene extends Phaser.Scene {
 
       this.waveBarNext2 = this.add.text(0, barY, '', {
         fontSize: '7px', color: '#335555', fontFamily: ARCADE_FONT,
+      }).setOrigin(0, 0.5).setDepth(12);
+
+      // "NEXT:" dim label before upcoming queue
+      this.waveBarNextLabel = this.add.text(0, barY, 'NEXT:', {
+        fontSize: '6px', color: '#2a4a4a', fontFamily: ARCADE_FONT,
       }).setOrigin(0, 0.5).setDepth(12);
     }
 
@@ -896,6 +902,10 @@ export class GameScene extends Phaser.Scene {
       }
       if (next1) {
         this.waveBarNext1!.setX(rx - this.waveBarNext1!.width);
+        rx = this.waveBarNext1!.x - gap;
+        this.waveBarNextLabel!.setX(rx - this.waveBarNextLabel!.width).setVisible(true);
+      } else {
+        this.waveBarNextLabel!.setVisible(false);
       }
     }
   }
